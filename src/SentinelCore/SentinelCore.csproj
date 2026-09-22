@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageId>MarshalTitan.SentinelCore</PackageId>
+    <Title>Sentinel Core</Title>
+    <Description>Platform-neutral shared development primitives for opt-in Sentinel plugin consumers.</Description>
+    <PackageTags>sentinel;dalamud;ffxiv;library</PackageTags>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" Link="README.md" />
+  </ItemGroup>
+</Project>
+

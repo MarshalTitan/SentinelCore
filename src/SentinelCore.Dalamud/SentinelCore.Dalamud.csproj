@@ -1,0 +1,20 @@
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <PackageId>MarshalTitan.SentinelCore.Dalamud</PackageId>
+    <Title>Sentinel Core for Dalamud</Title>
+    <Description>Dalamud API 15 adapters and dynamic FFXIV metadata for opt-in Sentinel plugin consumers.</Description>
+    <PackageTags>sentinel;dalamud;ffxiv;library</PackageTags>
+    <Use_DalamudPackager>false</Use_DalamudPackager>
+    <Use_Dalamud_ImGui>false</Use_Dalamud_ImGui>
+    <Use_Dalamud_FFXIVClientStructs>false</Use_Dalamud_FFXIVClientStructs>
+    <Use_Dalamud_Newtonsoft_Json>false</Use_Dalamud_Newtonsoft_Json>
+    <Use_Dalamud_Serilog>false</Use_Dalamud_Serilog>
+    <Use_Dalamud_MSObjectPool>false</Use_Dalamud_MSObjectPool>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../SentinelCore/SentinelCore.csproj" />
+    <None Include="../../README.md" Pack="true" PackagePath="/" Link="README.md" />
+  </ItemGroup>
+</Project>
+

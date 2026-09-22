@@ -1,0 +1,15 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="src/SentinelCore/SentinelCore.csproj" />
+  <Project Path="src/SentinelCore.Dalamud/SentinelCore.Dalamud.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="src/SentinelCore.UI/SentinelCore.UI.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="tests/SentinelCore.Tests/SentinelCore.Tests.csproj" />
+</Solution>
