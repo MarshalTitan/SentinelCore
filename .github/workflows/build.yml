@@ -70,7 +70,10 @@ jobs:
         shell: pwsh
         run: |
           if (Test-Path 'repo.json') { throw 'Sentinel Core must not contain a Dalamud catalog manifest.' }
-          if (Get-ChildItem -Recurse -Filter '*.json' | Where-Object { $_.Name -match '^SentinelCore.*\.json$' }) {
+          $pluginManifests = @(git ls-files '*.json' | Where-Object {
+            [System.IO.Path]::GetFileName($_) -match '^SentinelCore.*\.json$'
+          })
+          if ($pluginManifests.Count -gt 0) {
             throw 'Sentinel Core must not contain a Dalamud plugin manifest.'
           }
           if (Get-ChildItem -Recurse -Filter 'latest.zip') { throw 'Sentinel Core must not produce an installable plugin ZIP.' }
