@@ -12,7 +12,7 @@ Sentinel Core is the opt-in development foundation for future MarshalTitan Senti
 | `MarshalTitan.SentinelCore.Dalamud` | `net10.0-windows` / Dalamud API 15 | Dalamud configuration and logging adapters plus dynamic `ClassJob` metadata |
 | `MarshalTitan.SentinelCore.UI` | `net10.0-windows` / Dalamud API 15 | Classic and opt-in Sentinel Modern palettes, responsive configuration components, role colours, and balanced ImGui scopes |
 
-All three libraries carry assembly/file version `0.2.0.0`. NuGet packages use the normalized package version `0.2.0`; releases and Git tags use the Sentinel four-part tag `v0.2.0.0`.
+All three libraries carry assembly/file version `0.2.1.0`. NuGet packages use the normalized package version `0.2.1`; releases and Git tags use the Sentinel four-part tag `v0.2.1.0`.
 
 ## Design rules
 

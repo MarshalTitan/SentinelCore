@@ -19,7 +19,7 @@ public readonly record struct SentinelModernShellOptions(
 
     public float Scale { get; init; } = 1f;
 
-    public float HeaderHeight { get; init; } = 76f;
+    public float HeaderHeight { get; init; } = 84f;
 
     public bool DrawAmbientBackground { get; init; } = true;
 
@@ -35,6 +35,8 @@ public readonly record struct SentinelModernShellOptions(
 /// </summary>
 public static class SentinelModernConfigurationShell
 {
+    private const float MinimumHeaderHeight = 84f;
+
     public static void Draw(
         SentinelModernShellOptions options,
         Action drawNavigation,
@@ -72,10 +74,12 @@ public static class SentinelModernConfigurationShell
 
     private static void DrawHeader(SentinelModernShellOptions options)
     {
+        var headerHeight = MathF.Max(options.HeaderHeight, MinimumHeaderHeight) * options.Scale;
         var visible = ImGui.BeginChild(
             "##Header",
-            new Vector2(0f, options.HeaderHeight * options.Scale),
-            true);
+            new Vector2(0f, headerHeight),
+            true,
+            ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
         try
         {
             if (!visible)

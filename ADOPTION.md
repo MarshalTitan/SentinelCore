@@ -9,15 +9,15 @@ SentinelHUD supplied the live-tested Sentinel Modern reference implementation an
 ## Option A: exact release packages
 
 1. Download the three `.nupkg` files attached to the chosen Sentinel Core GitHub release.
-2. Commit only the package or packages the plugin actually consumes beneath a plugin-local feed, for example `.packages/SentinelCore/v0.2.0.0/`.
+2. Commit only the package or packages the plugin actually consumes beneath a plugin-local feed, for example `.packages/SentinelCore/v0.2.1.0/`.
 3. Add that directory as a package source in the consumer repository's `NuGet.Config`.
 4. Pin the normalized package version exactly; do not use a wildcard or version range.
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="MarshalTitan.SentinelCore" Version="0.2.0" />
-  <PackageReference Include="MarshalTitan.SentinelCore.Dalamud" Version="0.2.0" />
-  <PackageReference Include="MarshalTitan.SentinelCore.UI" Version="0.2.0" />
+  <PackageReference Include="MarshalTitan.SentinelCore" Version="0.2.1" />
+  <PackageReference Include="MarshalTitan.SentinelCore.Dalamud" Version="0.2.1" />
+  <PackageReference Include="MarshalTitan.SentinelCore.UI" Version="0.2.1" />
 </ItemGroup>
 ```
 
@@ -29,7 +29,7 @@ Add Sentinel Core as a submodule pinned to an immutable release tag or commit, t
 
 ```powershell
 git submodule add https://github.com/MarshalTitan/SentinelCore.git external/SentinelCore
-git -C external/SentinelCore checkout v0.2.0.0
+git -C external/SentinelCore checkout v0.2.1.0
 ```
 
 ```xml
@@ -63,7 +63,7 @@ The normalization callback is the plugin's migration/repair boundary. It should 
 
 ## Opting into Sentinel Modern
 
-Reference `MarshalTitan.SentinelCore.UI` `0.2.0` and keep the consumer's persisted default at Classic.
+Reference `MarshalTitan.SentinelCore.UI` `0.2.1` and keep the consumer's persisted default at Classic.
 The plugin can then expose `Classic` and `Sentinel Modern` as an explicit configuration choice.
 
 Create one `SentinelModernStyleScope` per window and reuse it:

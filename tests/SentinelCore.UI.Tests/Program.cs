@@ -60,10 +60,19 @@ static void TestResponsiveLayout()
     Equal(700f, wide.NavigationSize.Y);
 
     var narrow = SentinelModernLayout.Resolve(new Vector2(600f, 700f));
-    True(narrow.IsCompact);
-    Equal(600f, narrow.NavigationSize.X);
-    Equal(210f, narrow.NavigationSize.Y);
-    Equal(490f, narrow.ContentSize.Y);
+    False(narrow.IsCompact);
+    Equal(182f, narrow.NavigationSize.X);
+    Equal(700f, narrow.NavigationSize.Y);
+    Equal(418f, narrow.ContentSize.X);
+
+    var stacked = SentinelModernLayout.Resolve(
+        new Vector2(600f, 700f),
+        1f,
+        SentinelModernLayoutOptions.Default with { AllowStackedNavigation = true });
+    True(stacked.IsCompact);
+    Equal(600f, stacked.NavigationSize.X);
+    Equal(210f, stacked.NavigationSize.Y);
+    Equal(490f, stacked.ContentSize.Y);
 
     var scaled = SentinelModernLayout.Resolve(new Vector2(1200f, 800f), 1.5f);
     False(scaled.IsCompact);

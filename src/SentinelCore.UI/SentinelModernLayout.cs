@@ -15,6 +15,13 @@ public readonly record struct SentinelModernLayoutOptions(
         218f,
         680f,
         210f);
+
+    /// <summary>
+    /// Gets whether navigation may move above the content when the available width is below
+    /// <see cref="CompactBreakpoint"/>. The Sentinel configuration-window convention keeps this
+    /// disabled so navigation remains a left sidebar at every supported window size.
+    /// </summary>
+    public bool AllowStackedNavigation { get; init; }
 }
 
 public readonly record struct SentinelModernLayoutResult(
@@ -41,7 +48,8 @@ public static class SentinelModernLayout
         ValidateAvailable(available);
         ValidateOptions(options);
 
-        var compact = available.X < options.CompactBreakpoint * scale;
+        var compact = options.AllowStackedNavigation
+            && available.X < options.CompactBreakpoint * scale;
         if (compact)
         {
             var navigationHeight = Math.Clamp(
