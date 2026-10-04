@@ -13,14 +13,14 @@ switch any consumer automatically; each plugin chooses and persists its own them
 |---|---|
 | `SentinelModernPalette` | Semantic colour tokens for canvas, surfaces, borders, accents, text, toggles, and status tones |
 | `SentinelModernStyleScope` | Reusable, balanced styling for windows, children, buttons, combos, sliders, scrollbars, resize grips, and collapsing headers |
-| `SentinelModernConfigurationShell` | Responsive header, grouped navigation area, and content area inside an existing Dalamud window |
+| `SentinelModernConfigurationShell` | Non-scrolling header, persistent left navigation rail, and right content area inside an existing Dalamud window |
 | `SentinelModernNavigation` | Group labels and selected/unselected navigation items |
 | `SentinelModernCard` | Rounded child-panel/card scope with guaranteed `EndChild` balancing |
 | `SentinelModernControls` | Modern switch and collapsing-section helpers |
 | `SentinelModernUi` | Page headings, descriptions, section headings, and status chips |
 | `SentinelModernAmbient` | Optional procedural blue, violet, and teal background rings; no image assets |
 | `SentinelThemeState<TPage>` | Renderer-independent opt-in theme and selected-page state |
-| `SentinelModernLayout` | Tested responsive split/compact layout calculations |
+| `SentinelModernLayout` | Tested sidebar sizing with an explicit opt-in stacked layout for non-standard consumers |
 
 ## Window integration
 
@@ -134,8 +134,12 @@ state globally and cannot change another plugin's selection.
 ## Scaling and resizing
 
 - Pass the current Dalamud UI scale to the style scope, shell, navigation items, switches, and chips.
-- The shell uses a bounded proportional sidebar on normal windows.
-- Below the compact breakpoint, navigation stacks above content instead of squeezing the page.
+- The shell always uses a bounded proportional left sidebar by default, including on narrow windows.
+- Keep a practical consumer minimum width (the example uses `620f`) so the right content pane remains useful.
+- The standard header is at least `84f` high before UI scaling and never displays its own scrollbar.
+- Non-standard consumers may explicitly set
+  `Layout = SentinelModernLayoutOptions.Default with { AllowStackedNavigation = true }`; Sentinel
+  configuration windows should not enable this.
 - Consumers still set their own first-use size and minimum size through Dalamud's `Window` API.
 - Set `DrawAmbientBackground = false` for a flat canvas, or reduce `AmbientIntensity` for a quieter effect.
 
