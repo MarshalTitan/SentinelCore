@@ -44,6 +44,7 @@ jobs:
           dotnet restore SentinelCore.slnx -m:1
           dotnet build SentinelCore.slnx -c Release --no-restore -m:1
           dotnet run --project tests/SentinelCore.Tests/SentinelCore.Tests.csproj -c Release --no-build
+          dotnet run --project tests/SentinelCore.UI.Tests/SentinelCore.UI.Tests.csproj -c Release --no-build
 
       - name: Pack libraries
         shell: pwsh

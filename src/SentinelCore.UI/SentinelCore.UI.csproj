@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>MarshalTitan.SentinelCore.UI</PackageId>
     <Title>Sentinel Core UI</Title>
-    <Description>Shared Sentinel ImGui palette and balanced style helpers for opt-in Dalamud plugin consumers.</Description>
+    <Description>Shared Classic and opt-in Sentinel Modern ImGui themes, responsive configuration components, and balanced style helpers.</Description>
     <PackageTags>sentinel;dalamud;ffxiv;imgui;library</PackageTags>
     <Use_DalamudPackager>false</Use_DalamudPackager>
     <Use_Dalamud_FFXIVClientStructs>false</Use_Dalamud_FFXIVClientStructs>
@@ -18,4 +18,3 @@
     <None Include="../../README.md" Pack="true" PackagePath="/" Link="README.md" />
   </ItemGroup>
 </Project>
-

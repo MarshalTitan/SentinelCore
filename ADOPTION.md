@@ -4,20 +4,20 @@ Adoption is optional and per plugin. A Core upgrade in one plugin cannot change 
 
 ## Recommended first adoption: SentinelHUD
 
-Use a new plugin such as SentinelHUD as the first consumer. Keep the experiment separate from the existing five Sentinel plugins until the API has survived real development and in-game testing.
+SentinelHUD supplied the live-tested Sentinel Modern reference implementation and is the intended first consumer of the promoted shared UI. Updating SentinelHUD to consume Core remains a separate plugin task; this release does not alter SentinelHUD or any other plugin.
 
 ## Option A: exact release packages
 
 1. Download the three `.nupkg` files attached to the chosen Sentinel Core GitHub release.
-2. Commit only the package or packages the plugin actually consumes beneath a plugin-local feed, for example `.packages/SentinelCore/v0.1.0.0/`.
+2. Commit only the package or packages the plugin actually consumes beneath a plugin-local feed, for example `.packages/SentinelCore/v0.2.0.0/`.
 3. Add that directory as a package source in the consumer repository's `NuGet.Config`.
 4. Pin the normalized package version exactly; do not use a wildcard or version range.
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="MarshalTitan.SentinelCore" Version="0.1.0" />
-  <PackageReference Include="MarshalTitan.SentinelCore.Dalamud" Version="0.1.0" />
-  <PackageReference Include="MarshalTitan.SentinelCore.UI" Version="0.1.0" />
+  <PackageReference Include="MarshalTitan.SentinelCore" Version="0.2.0" />
+  <PackageReference Include="MarshalTitan.SentinelCore.Dalamud" Version="0.2.0" />
+  <PackageReference Include="MarshalTitan.SentinelCore.UI" Version="0.2.0" />
 </ItemGroup>
 ```
 
@@ -29,7 +29,7 @@ Add Sentinel Core as a submodule pinned to an immutable release tag or commit, t
 
 ```powershell
 git submodule add https://github.com/MarshalTitan/SentinelCore.git external/SentinelCore
-git -C external/SentinelCore checkout v0.1.0.0
+git -C external/SentinelCore checkout v0.2.0.0
 ```
 
 ```xml
@@ -60,6 +60,28 @@ lifetime.Add(configuration);
 ```
 
 The normalization callback is the plugin's migration/repair boundary. It should preserve old user values, advance the plugin's own schema version, and return a valid configuration.
+
+## Opting into Sentinel Modern
+
+Reference `MarshalTitan.SentinelCore.UI` `0.2.0` and keep the consumer's persisted default at Classic.
+The plugin can then expose `Classic` and `Sentinel Modern` as an explicit configuration choice.
+
+Create one `SentinelModernStyleScope` per window and reuse it:
+
+```csharp
+private readonly SentinelModernStyleScope modernStyle = new();
+
+public override void PreDraw() => modernStyle.Push(currentDalamudUiScale);
+public override void PostDraw() => modernStyle.Pop();
+```
+
+Draw `SentinelModernConfigurationShell` inside the consumer's existing Dalamud `Window.Draw` method.
+The shell does not own the top-level window, so normal title-bar collapse, close, resizing, and saved
+position behavior remain intact. See [docs/MODERN_THEME.md](docs/MODERN_THEME.md) for a complete window,
+navigation, card, switch, chip, scaling, and theme-state example.
+
+Adoption does not require a Sentinel Core plugin, a catalog entry, global configuration, or changes to
+any other installed Sentinel plugin.
 
 ## Upgrade procedure
 

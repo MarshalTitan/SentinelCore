@@ -12,4 +12,5 @@
     <Platform Project="x64" />
   </Project>
   <Project Path="tests/SentinelCore.Tests/SentinelCore.Tests.csproj" />
+  <Project Path="tests/SentinelCore.UI.Tests/SentinelCore.UI.Tests.csproj" />
 </Solution>

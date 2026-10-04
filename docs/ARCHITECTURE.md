@@ -29,9 +29,16 @@ MarshalTitan.SentinelCore.UI ─────┘
 ## UI library
 
 - Centralizes the dark charcoal/gold Sentinel surface palette.
+- Keeps that original Classic palette and its existing APIs unchanged.
+- Provides the opt-in Sentinel Modern design system promoted from Sentinel HUD 0.8.3.0: semantic
+  midnight-navy/electric-blue tokens, reusable balanced styling, responsive configuration shell,
+  grouped navigation, cards, headings, switches, chips, collapsing sections, and procedural ambience.
+- Leaves the top-level Dalamud window with the consumer so native title-bar close/collapse, resizing,
+  scale, position persistence, and window lifetime remain consumer-controlled.
+- Keeps theme and page selection local to each consumer; unknown persisted theme values fall back to Classic.
 - Exposes the established role hues: tank blue, healer green, melee red, physical ranged orange, magical ranged purple, and neutral grey.
 - Uses disposable style scopes so every pushed ImGui colour/variable is popped exactly once.
-- Provides only small primitives; plugins retain control of their window layouts and behavior.
+- Provides composable primitives; plugins retain control of page content and behavior.
 
 ## Compatibility policy
 
@@ -40,4 +47,3 @@ MarshalTitan.SentinelCore.UI ─────┘
 - Existing members are not removed or behaviorally redefined in a patch release.
 - Patch-sensitive game or Dalamud integrations stay in the Dalamud assembly, never the generic assembly.
 - IPC endpoint names include a contract major version. A breaking payload change requires a new endpoint major.
-

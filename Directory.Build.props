@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
-    <SentinelCoreVersion>0.1.0.0</SentinelCoreVersion>
-    <VersionPrefix>0.1.0</VersionPrefix>
-    <PackageVersion>0.1.0</PackageVersion>
+    <SentinelCoreVersion>0.2.0.0</SentinelCoreVersion>
+    <VersionPrefix>0.2.0</VersionPrefix>
+    <PackageVersion>0.2.0</PackageVersion>
     <AssemblyVersion>$(SentinelCoreVersion)</AssemblyVersion>
     <FileVersion>$(SentinelCoreVersion)</FileVersion>
     <InformationalVersion>$(SentinelCoreVersion)</InformationalVersion>
@@ -23,4 +23,3 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 </Project>
-
