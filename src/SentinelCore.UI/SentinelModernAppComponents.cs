@@ -395,6 +395,10 @@ public static class SentinelModernStatusPill
 
 public readonly record struct SentinelModernGlassCardOptions
 {
+    public SentinelModernGlassCardOptions()
+    {
+    }
+
     public Vector2 Size { get; init; }
 
     public Vector4? Accent { get; init; }
