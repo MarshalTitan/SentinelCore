@@ -33,6 +33,11 @@ MarshalTitan.SentinelCore.UI ─────┘
 - Provides the opt-in Sentinel Modern design system promoted from Sentinel HUD 0.8.3.0: semantic
   midnight-navy/electric-blue tokens, reusable balanced styling, responsive configuration shell,
   grouped navigation, cards, headings, switches, chips, collapsing sections, and procedural ambience.
+- Adds the separate opt-in Modern 2 application shell: compact header, fixed icon rail, optional
+  secondary sidebar and action dock, per-window motion state, reduced-motion handling, animated
+  procedural ambience, glass surfaces, settings rows, pills, progress, and controller-aware controls.
+- Keeps all original Modern APIs unchanged; package adoption and Modern 2 adoption are separate
+  consumer decisions.
 - Leaves the top-level Dalamud window with the consumer so native title-bar close/collapse, resizing,
   scale, position persistence, and window lifetime remain consumer-controlled.
 - Keeps theme and page selection local to each consumer; unknown persisted theme values fall back to Classic.

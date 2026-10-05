@@ -2,7 +2,9 @@
 
 Sentinel Core is the opt-in development foundation for future MarshalTitan Sentinel plugins. It is a set of versioned libraries, not an installable Dalamud plugin, not a catalog entry, and not a shared runtime service.
 
-**SentinelHUD** supplied the first live-tested Sentinel Modern preview and is the intended first consumer of the promoted UI library. Existing plugins remain independent until they are deliberately migrated in separate, tested work.
+**SentinelHUD** supplied the first live-tested Sentinel Modern preview and remains the intended first
+consumer of the opt-in Sentinel Modern 2 application shell. Existing plugins remain independent
+until they are deliberately migrated in separate, tested work.
 
 ## Packages
 
@@ -10,9 +12,29 @@ Sentinel Core is the opt-in development foundation for future MarshalTitan Senti
 |---|---|---|
 | `MarshalTitan.SentinelCore` | `net10.0` | Identity/versioning, configuration coordination, diagnostics, lifecycle safety, job-role models, and IPC contracts |
 | `MarshalTitan.SentinelCore.Dalamud` | `net10.0-windows` / Dalamud API 15 | Dalamud configuration and logging adapters plus dynamic `ClassJob` metadata |
-| `MarshalTitan.SentinelCore.UI` | `net10.0-windows` / Dalamud API 15 | Classic and opt-in Sentinel Modern palettes, responsive configuration components, role colours, and balanced ImGui scopes |
+| `MarshalTitan.SentinelCore.UI` | `net10.0-windows` / Dalamud API 15 | Classic and opt-in Sentinel Modern palettes, application shell, navigation, motion, glass surfaces, controls, role colours, and balanced ImGui scopes |
 
-All three libraries carry assembly/file version `0.2.1.0`. NuGet packages use the normalized package version `0.2.1`; releases and Git tags use the Sentinel four-part tag `v0.2.1.0`.
+All three libraries carry assembly/file version `0.3.0.0`. NuGet packages use the normalized package
+version `0.3.0`; releases and Git tags use the Sentinel four-part tag `v0.3.0.0`.
+
+## Sentinel Modern 2
+
+Modern 2 adds a polished application-style shell without replacing the existing configuration
+shell. Its canonical shared pieces include:
+
+- a 56px compact header and 64px icon navigation rail;
+- an optional 196px secondary settings sidebar;
+- an optional 72px action/status dock;
+- frame-rate-independent hover, selection, page-reveal, pulse, and ambient motion;
+- deterministic reduced-motion behavior;
+- procedural blue, violet, and teal background glows;
+- glass cards, gradient surfaces, shadows, glows, highlights, separators, pills, progress bars,
+  status dots, settings rows, and controller-aware switches.
+
+All measurements are logical pixels and scale with Dalamud UI scaling. Primary and secondary
+navigation always remain on the left; the shared layout never stacks navigation above content.
+The shell draws inside a consumer-owned Dalamud window, keeping window lifetime, saved position,
+resizing, and close/collapse policy under the consumer's control.
 
 ## Design rules
 
@@ -24,7 +46,9 @@ All three libraries carry assembly/file version `0.2.1.0`. NuGet packages use th
 - Optional IPC calls fail closed and report a structured result.
 - Disposable resources are unwound in reverse registration order and one failure does not prevent later cleanup.
 
-See [ADOPTION.md](ADOPTION.md) for the exact opt-in workflow, [docs/MODERN_THEME.md](docs/MODERN_THEME.md) for the shared configuration UI, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for component boundaries.
+See [ADOPTION.md](ADOPTION.md) for the exact opt-in workflow,
+[docs/MODERN_THEME.md](docs/MODERN_THEME.md) for both Modern generations, and
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for component boundaries.
 
 ## Build and test
 

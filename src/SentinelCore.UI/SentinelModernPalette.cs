@@ -13,6 +13,10 @@ public static class SentinelModernPalette
     public static readonly Vector4 SurfaceRaised = new(0.071f, 0.092f, 0.165f, 0.98f);
     public static readonly Vector4 SurfaceHover = new(0.095f, 0.130f, 0.235f, 1f);
     public static readonly Vector4 SurfaceActive = new(0.105f, 0.150f, 0.275f, 1f);
+    public static readonly Vector4 SurfaceGlassTop = new(0.072f, 0.102f, 0.190f, 0.92f);
+    public static readonly Vector4 SurfaceGlassBottom = new(0.038f, 0.052f, 0.105f, 0.94f);
+    public static readonly Vector4 SurfaceRail = new(0.030f, 0.044f, 0.092f, 0.88f);
+    public static readonly Vector4 SurfaceDock = new(0.045f, 0.065f, 0.128f, 0.97f);
     public static readonly Vector4 NavigationSelected = new(0.115f, 0.245f, 0.465f, 0.95f);
     public static readonly Vector4 NavigationSelectedHover = new(0.135f, 0.285f, 0.530f, 1f);
 
@@ -23,6 +27,9 @@ public static class SentinelModernPalette
     public static readonly Vector4 Violet = new(0.635f, 0.355f, 0.940f, 1f);
     public static readonly Vector4 Teal = new(0.180f, 0.720f, 0.700f, 1f);
     public static readonly Vector4 Rose = new(0.960f, 0.330f, 0.515f, 1f);
+    public static readonly Vector4 Error = new(0.985f, 0.255f, 0.325f, 1f);
+    public static readonly Vector4 Shadow = new(0.005f, 0.008f, 0.025f, 0.50f);
+    public static readonly Vector4 Highlight = new(0.720f, 0.830f, 1f, 0.10f);
 
     public static readonly Vector4 Text = new(0.925f, 0.941f, 0.985f, 1f);
     public static readonly Vector4 Muted = new(0.590f, 0.635f, 0.740f, 1f);

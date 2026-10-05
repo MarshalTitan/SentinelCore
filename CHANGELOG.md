@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0.0
+
+- Adds the opt-in `SentinelModernAppShell` application layout with a compact single-row header,
+  fixed slim icon rail, optional secondary category sidebar, content pane, and optional action dock.
+- Adds per-window, frame-rate-independent `SentinelModernMotion` for hover, selected navigation,
+  page reveal, status pulse, and ambient drift with deterministic reduced-motion behavior.
+- Adds the animated, clipped, asset-free Modern 2 ambient background while preserving the original
+  static `DrawRings` API for existing consumers.
+- Adds shared glass/gradient surfaces, shadows, glows, highlights, separators, pills, progress bars,
+  status dots, glass cards, compact settings rows, and controller-aware switches.
+- Adds refined ready, enabled, running, warning, error, neutral, accent, and custom status pills.
+- Adds renderer-independent coverage for shell geometry, minimum sizes, non-stacking navigation,
+  header scroll policy, UI scaling, reduced motion, motion state lifecycle, and status tones.
+- Keeps Classic Sentinel and every `0.2.1` Sentinel Modern API source-compatible and behaviorally
+  unchanged so consumers migrate explicitly.
+
 ## 0.2.1.0
 
 - Keeps grouped Sentinel Modern navigation in a dedicated left sidebar at every supported window

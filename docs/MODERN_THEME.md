@@ -7,7 +7,62 @@ rose visual language without copying third-party assets, branding, or source.
 The Classic Sentinel palette and helpers remain available. Installing or updating Core does not
 switch any consumer automatically; each plugin chooses and persists its own theme.
 
-## Component map
+## Sentinel Modern 2 application shell
+
+Modern 2 is a new, opt-in application-shell layer in package `0.3.0`. It does not redefine the
+existing `SentinelModernConfigurationShell`; consumers can upgrade their package first and migrate
+their window later.
+
+The default logical geometry is:
+
+| Region | Size |
+|---|---:|
+| Compact header | 56px |
+| Primary icon rail | 64px |
+| Icon button | 42px |
+| Optional secondary sidebar | 196px |
+| Optional action dock | 72px |
+| Content padding | 20px |
+
+Every value scales with the supplied Dalamud UI scale. Navigation never stacks above content. A
+simple plugin uses `rail → content`; category-heavy settings use `rail → secondary sidebar →
+content`. The action dock is present only when the consumer supplies its drawing callback.
+
+### Modern 2 component map
+
+| API | Purpose |
+|---|---|
+| `SentinelModernAppShell` | Compact header, primary rail, content, optional secondary sidebar, and optional dock |
+| `SentinelModernAppShellState` | Per-window page transition and bounded motion-channel ownership |
+| `SentinelModernAppLayout` | Tested logical sizing, scaling, minimum-size calculation, and non-stacking policy |
+| `SentinelModernIconRail` | Icon buttons, tooltips, animated indicator, hover state, and optional badge |
+| `SentinelModernSecondaryNavigation` | Canonical icon/label category rows |
+| `SentinelModernMotion` | Frame-rate-independent smoothing, hover, wave, pulse, and reduced-motion behavior |
+| `SentinelModernPaint` | Gradients, glass, shadow, glow, highlight, separator, pill, progress, and status dot |
+| `SentinelModernGlassCard` | Balanced, translucent card child scope |
+| `SentinelModernSettingsRow` | Compact label/description/control row |
+| `SentinelModernSwitch` | Standard ImGui activation with Core-owned switch rendering and motion |
+| `SentinelModernStatusPill` | Ready, enabled, running, warning, error, neutral, accent, and custom pills |
+| `SentinelModernPageTransition` | Optional 240ms content-only fade and 10px slide |
+| `SentinelModernActionDock` | Optional primary, danger, and status helpers for consumer-owned actions |
+| `SentinelModernAmbient.DrawAnimated` | Three low-opacity drifting blue/violet/teal procedural glows |
+
+The primary and secondary navigation and the Modern 2 switch use standard ImGui buttons as their
+input targets. Mouse, keyboard, and controller activation therefore remain functional even though
+their appearance is drawn with the window draw list.
+
+Pass `pluginInterface.UiBuilder.ShouldUseReducedMotion` into the shell options every frame. With
+reduced motion enabled, selection and page changes become immediate, ambient centres stay fixed,
+and optional pulses become static. Layout and input behavior do not change.
+
+The custom header supports a consumer-owned icon callback or glyph, compact status pill, context
+label, and optional minimize/close callbacks. Core still does not own the top-level window: the
+consumer decides whether to retain the native Dalamud title bar or use its own window flags and bind
+the shared header callbacks. Header and navigation children explicitly disallow scrolling.
+
+See [ADOPTION.md](../ADOPTION.md) for a complete retained-state integration example.
+
+## Original configuration-shell component map
 
 | API | Purpose |
 |---|---|
