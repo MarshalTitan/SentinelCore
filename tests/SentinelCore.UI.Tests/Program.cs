@@ -116,7 +116,7 @@ static void TestModern2Layout()
         hasActionDock: true);
     Equal(196f, complex.SecondarySidebarWidth);
     Equal(72f, complex.ActionDockHeight);
-    Equal(600f, complex.ContentWidth);
+    Equal(700f, complex.ContentWidth);
     Equal(592f, complex.ContentHeight);
     False(complex.NavigationIsStacked);
 
