@@ -266,13 +266,9 @@ static void TestModern2SettingsRows()
 
 static void TestModern2PolishedDefaults()
 {
-    var options = new SentinelModernAppShellOptions("test", "Sentinel", "General")
-    {
-        PluginGlyph = "S",
-    };
-    Equal(SentinelModernAppSurfaceStyle.Unified, options.SurfaceStyle);
-    Equal(0.9f, options.AmbientIntensity);
-    False(options.EnableWindowDragging);
+    Equal(SentinelModernAppSurfaceStyle.Unified, SentinelModernAppShellDefaults.SurfaceStyle);
+    Equal(0.9f, SentinelModernAppShellDefaults.AmbientIntensity);
+    False(SentinelModernAppShellDefaults.EnableWindowDragging);
 }
 
 static void True(bool value)
