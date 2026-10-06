@@ -15,6 +15,18 @@ public enum SentinelModernAppSurfaceStyle
     Segmented = 1,
 }
 
+/// <summary>
+/// Renderer-independent defaults for the polished Sentinel Modern application shell.
+/// </summary>
+public static class SentinelModernAppShellDefaults
+{
+    public const bool EnableWindowDragging = false;
+
+    public const float AmbientIntensity = 0.9f;
+
+    public const SentinelModernAppSurfaceStyle SurfaceStyle = SentinelModernAppSurfaceStyle.Unified;
+}
+
 public readonly record struct SentinelModernAppShellOptions(
     string Id,
     string Title,
@@ -46,14 +58,14 @@ public readonly record struct SentinelModernAppShellOptions(
     /// Enables dragging the consumer-owned top-level ImGui window from unused header space.
     /// Consumers should combine this with <see cref="SentinelModernWindowChrome.UseCustomHeader"/>.
     /// </summary>
-    public bool EnableWindowDragging { get; init; }
+    public bool EnableWindowDragging { get; init; } = SentinelModernAppShellDefaults.EnableWindowDragging;
 
     public bool DrawAmbientBackground { get; init; } = true;
 
-    public float AmbientIntensity { get; init; } = 0.9f;
+    public float AmbientIntensity { get; init; } = SentinelModernAppShellDefaults.AmbientIntensity;
 
     public SentinelModernAppSurfaceStyle SurfaceStyle { get; init; }
-        = SentinelModernAppSurfaceStyle.Unified;
+        = SentinelModernAppShellDefaults.SurfaceStyle;
 
     public SentinelModernAppLayoutOptions Layout { get; init; } = SentinelModernAppLayoutOptions.Default;
 }
