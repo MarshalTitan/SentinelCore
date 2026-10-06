@@ -1,4 +1,5 @@
 using System.Numerics;
+using Dalamud.Bindings.ImGui;
 using SentinelCore.UI;
 
 var tests = new (string Name, Action Run)[]
@@ -12,6 +13,9 @@ var tests = new (string Name, Action Run)[]
     ("modern 2 reduced motion", TestModern2ReducedMotion),
     ("modern 2 motion channel lifecycle", TestModern2MotionLifecycle),
     ("modern 2 status pills", TestModern2StatusPills),
+    ("modern 2 single-header window policy", TestModern2WindowChrome),
+    ("modern 2 responsive settings rows", TestModern2SettingsRows),
+    ("modern 2 polished defaults", TestModern2PolishedDefaults),
 };
 
 var failures = new List<string>();
@@ -211,6 +215,80 @@ static void TestModern2StatusPills()
             }));
     Throws<ArgumentException>(() => SentinelModernStatusPill.ResolveColour(
         new SentinelModernStatusPillOptions("CUSTOM", SentinelModernPillTone.Custom)));
+}
+
+static void TestModern2WindowChrome()
+{
+    var existing = ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoNavInputs;
+    var flags = SentinelModernWindowChrome.UseCustomHeader(existing);
+    True(SentinelModernWindowChrome.HasSingleCustomHeader(flags));
+    True((flags & ImGuiWindowFlags.NoTitleBar) != 0);
+    True((flags & ImGuiWindowFlags.NoCollapse) != 0);
+    True((flags & ImGuiWindowFlags.NoScrollbar) != 0);
+    True((flags & ImGuiWindowFlags.NoScrollWithMouse) != 0);
+    True((flags & ImGuiWindowFlags.NoSavedSettings) != 0);
+    True((flags & ImGuiWindowFlags.NoNavInputs) != 0);
+    False(SentinelModernWindowChrome.HasSingleCustomHeader(existing));
+}
+
+static void TestModern2SettingsRows()
+{
+    var wideColumns = SentinelModernSettingsRowLayout.ResolveColumns(640f);
+    False(wideColumns.IsStacked);
+    Equal(416f, wideColumns.TextWidth);
+    Equal(180f, wideColumns.ControlWidth);
+
+    var wide = SentinelModernSettingsRowLayout.Resolve(
+        640f,
+        18f,
+        34f,
+        28f,
+        hasDescription: true);
+    False(wide.IsStacked);
+    Equal(416f, wide.TextWidth);
+    Equal(180f, wide.ControlWidth);
+    Equal(76f, wide.Size.Y);
+
+    var narrowColumns = SentinelModernSettingsRowLayout.ResolveColumns(300f);
+    True(narrowColumns.IsStacked);
+    Equal(274f, narrowColumns.TextWidth);
+    Equal(274f, narrowColumns.ControlWidth);
+
+    var narrow = SentinelModernSettingsRowLayout.Resolve(
+        300f,
+        18f,
+        34f,
+        28f,
+        hasDescription: true);
+    True(narrow.IsStacked);
+    Equal(114f, narrow.Size.Y);
+    True(narrow.ControlOffset.Y > narrow.TextOffset.Y + 18f + 34f);
+
+    var scaled = SentinelModernSettingsRowLayout.ResolveColumns(960f, 1.5f);
+    False(scaled.IsStacked);
+    Equal(270f, scaled.ControlWidth);
+
+    Throws<ArgumentOutOfRangeException>(() =>
+        SentinelModernSettingsRowLayout.ResolveColumns(0f));
+    Throws<ArgumentException>(() =>
+        SentinelModernSettingsRowLayout.ResolveColumns(
+            640f,
+            options: SentinelModernSettingsRowLayoutOptions.Default with
+            {
+                PreferredControlWidth = 100f,
+                MinimumControlWidth = 120f,
+            }));
+}
+
+static void TestModern2PolishedDefaults()
+{
+    var options = new SentinelModernAppShellOptions("test", "Sentinel", "General")
+    {
+        PluginGlyph = "S",
+    };
+    Equal(SentinelModernAppSurfaceStyle.Unified, options.SurfaceStyle);
+    Equal(0.9f, options.AmbientIntensity);
+    False(options.EnableWindowDragging);
 }
 
 static void True(bool value)
