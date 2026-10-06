@@ -9,7 +9,7 @@ namespace SentinelCore.UI;
 /// </summary>
 public static class SentinelModernAmbient
 {
-    private const int AnimatedGlowLayers = 4;
+    private const int AnimatedGlowLayers = 5;
 
     public static void DrawRings(float scale = 1f, float intensity = 1f)
     {
@@ -53,7 +53,7 @@ public static class SentinelModernAmbient
         Vector2 minimum,
         Vector2 maximum,
         float scale = 1f,
-        float intensity = 0.72f,
+        float intensity = 0.9f,
         bool reducedMotion = false)
     {
         ArgumentNullException.ThrowIfNull(motion);
@@ -88,7 +88,8 @@ public static class SentinelModernAmbient
                     height * (0.18f + (0.025f * blueY))),
                 MathF.Max(125f * scale, width * 0.31f),
                 SentinelModernPalette.Accent,
-                0.052f * intensity);
+                0.096f * intensity,
+                scale);
             DrawAnimatedGlow(
                 drawList,
                 minimum + new Vector2(
@@ -96,7 +97,8 @@ public static class SentinelModernAmbient
                     height * (0.30f + (0.035f * violetY))),
                 MathF.Max(110f * scale, width * 0.27f),
                 SentinelModernPalette.Violet,
-                0.038f * intensity);
+                0.074f * intensity,
+                scale);
             DrawAnimatedGlow(
                 drawList,
                 minimum + new Vector2(
@@ -104,7 +106,8 @@ public static class SentinelModernAmbient
                     height * (0.94f + (0.020f * tealY))),
                 MathF.Max(135f * scale, width * 0.30f),
                 SentinelModernPalette.Teal,
-                0.032f * intensity);
+                0.061f * intensity,
+                scale);
         }
         finally
         {
@@ -141,7 +144,8 @@ public static class SentinelModernAmbient
         Vector2 centre,
         float radius,
         Vector4 colour,
-        float peakOpacity)
+        float peakOpacity,
+        float scale)
     {
         for (var layer = AnimatedGlowLayers; layer >= 1; layer--)
         {
@@ -154,5 +158,22 @@ public static class SentinelModernAmbient
                 ImGui.ColorConvertFloat4ToU32(SentinelModernPaint.WithAlpha(colour, alpha)),
                 48);
         }
+
+        drawList.AddCircle(
+            centre,
+            radius * 0.68f,
+            ImGui.ColorConvertFloat4ToU32(SentinelModernPaint.WithAlpha(
+                colour,
+                peakOpacity * 0.30f)),
+            48,
+            MathF.Max(1f, 1.15f * scale));
+        drawList.AddCircle(
+            centre,
+            radius * 0.37f,
+            ImGui.ColorConvertFloat4ToU32(SentinelModernPaint.WithAlpha(
+                colour,
+                peakOpacity * 0.42f)),
+            48,
+            MathF.Max(1f, 1.05f * scale));
     }
 }

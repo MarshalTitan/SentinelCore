@@ -18,6 +18,17 @@ public sealed class SentinelModernStyleScope : IDisposable
     public bool IsActive => active;
 
     public void Push(float scale = 1f)
+        => PushCore(scale, appShell: false);
+
+    /// <summary>
+    /// Pushes the Modern style with zero top-level padding and borderless child regions for the
+    /// full-bleed application shell. This is intentionally separate from <see cref="Push"/> so
+    /// existing configuration-shell consumers retain their current geometry.
+    /// </summary>
+    public void PushAppShell(float scale = 1f)
+        => PushCore(scale, appShell: true);
+
+    private void PushCore(float scale, bool appShell)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         if (active)
@@ -67,9 +78,11 @@ public sealed class SentinelModernStyleScope : IDisposable
             PushVariable(ImGuiStyleVar.GrabRounding, 8f * scale);
             PushVariable(ImGuiStyleVar.ScrollbarRounding, 8f * scale);
             PushVariable(ImGuiStyleVar.WindowBorderSize, 1f * scale);
-            PushVariable(ImGuiStyleVar.ChildBorderSize, 1f * scale);
+            PushVariable(ImGuiStyleVar.ChildBorderSize, appShell ? 0f : 1f * scale);
             PushVariable(ImGuiStyleVar.FrameBorderSize, 1f * scale);
-            PushVariable(ImGuiStyleVar.WindowPadding, new Vector2(12f, 10f) * scale);
+            PushVariable(
+                ImGuiStyleVar.WindowPadding,
+                appShell ? Vector2.Zero : new Vector2(12f, 10f) * scale);
             PushVariable(ImGuiStyleVar.FramePadding, new Vector2(10f, 6f) * scale);
             PushVariable(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 7f) * scale);
             PushVariable(ImGuiStyleVar.ItemInnerSpacing, new Vector2(7f, 5f) * scale);

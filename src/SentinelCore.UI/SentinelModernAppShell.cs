@@ -9,6 +9,12 @@ public readonly record struct SentinelModernIconDrawContext(
     Vector2 Maximum,
     float Scale);
 
+public enum SentinelModernAppSurfaceStyle
+{
+    Unified = 0,
+    Segmented = 1,
+}
+
 public readonly record struct SentinelModernAppShellOptions(
     string Id,
     string Title,
@@ -36,9 +42,18 @@ public readonly record struct SentinelModernAppShellOptions(
 
     public bool ReducedMotion { get; init; }
 
+    /// <summary>
+    /// Enables dragging the consumer-owned top-level ImGui window from unused header space.
+    /// Consumers should combine this with <see cref="SentinelModernWindowChrome.UseCustomHeader"/>.
+    /// </summary>
+    public bool EnableWindowDragging { get; init; }
+
     public bool DrawAmbientBackground { get; init; } = true;
 
-    public float AmbientIntensity { get; init; } = 0.72f;
+    public float AmbientIntensity { get; init; } = 0.9f;
+
+    public SentinelModernAppSurfaceStyle SurfaceStyle { get; init; }
+        = SentinelModernAppSurfaceStyle.Unified;
 
     public SentinelModernAppLayoutOptions Layout { get; init; } = SentinelModernAppLayoutOptions.Default;
 }
@@ -76,6 +91,8 @@ public static class SentinelModernAppShell
             drawActionDock is not null,
             options.Layout);
         var maximum = origin + available;
+
+        DrawApplicationSurface(origin, maximum, options.Scale, options.SurfaceStyle);
 
         if (options.DrawAmbientBackground)
         {
@@ -116,7 +133,8 @@ public static class SentinelModernAppShell
                     drawSecondaryNavigation,
                     sidebarMinimum,
                     sidebarMaximum,
-                    options.Scale);
+                    options.Scale,
+                    options.SurfaceStyle);
                 contentX = sidebarMaximum.X;
             }
 
@@ -134,7 +152,8 @@ public static class SentinelModernAppShell
                     drawActionDock,
                     new Vector2(origin.X, bodyTop + layout.BodyHeight),
                     new Vector2(available.X, layout.ActionDockHeight),
-                    options.Scale);
+                    options.Scale,
+                    options.SurfaceStyle);
             }
         }
         finally
@@ -146,6 +165,24 @@ public static class SentinelModernAppShell
         ImGui.Dummy(available);
     }
 
+    private static void DrawApplicationSurface(
+        Vector2 minimum,
+        Vector2 maximum,
+        float scale,
+        SentinelModernAppSurfaceStyle surfaceStyle)
+    {
+        var top = surfaceStyle == SentinelModernAppSurfaceStyle.Unified
+            ? SentinelModernPaint.Lighten(SentinelModernPalette.Canvas, 0.025f)
+            : SentinelModernPalette.Canvas;
+        SentinelModernPaint.GradientSurface(
+            ImGui.GetWindowDrawList(),
+            minimum,
+            maximum,
+            top,
+            SentinelModernPalette.Canvas,
+            9f * scale);
+    }
+
     private static void DrawHeader(
         SentinelModernAppShellOptions options,
         SentinelModernAppShellState state,
@@ -155,24 +192,32 @@ public static class SentinelModernAppShell
         var maximum = minimum + size;
         var scale = options.Scale;
         var drawList = ImGui.GetWindowDrawList();
+        var unified = options.SurfaceStyle == SentinelModernAppSurfaceStyle.Unified;
         SentinelModernPaint.GradientSurface(
             drawList,
             minimum,
             maximum,
-            SentinelModernPaint.WithAlpha(SentinelModernPalette.SurfaceGlassTop, 0.84f),
-            SentinelModernPaint.WithAlpha(SentinelModernPalette.SurfaceGlassBottom, 0.88f),
+            SentinelModernPaint.WithAlpha(
+                SentinelModernPalette.SurfaceGlassTop,
+                unified ? 0.34f : 0.84f),
+            SentinelModernPaint.WithAlpha(
+                SentinelModernPalette.SurfaceGlassBottom,
+                unified ? 0.42f : 0.88f),
             9f * scale);
         SentinelModernPaint.Hairline(
             drawList,
             new Vector2(minimum.X, maximum.Y - 0.5f),
             new Vector2(maximum.X, maximum.Y - 0.5f),
-            SentinelModernPaint.WithAlpha(SentinelModernPalette.Border, 0.62f));
+            SentinelModernPaint.WithAlpha(
+                SentinelModernPalette.Border,
+                unified ? 0.38f : 0.62f));
 
         ImGui.SetCursorScreenPos(minimum);
         ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
         try
         {
+            var dragging = false;
             var visible = ImGui.BeginChild(
                 "##Modern2Header",
                 size,
@@ -254,6 +299,22 @@ public static class SentinelModernAppShell
                             new Vector2(cursorX, centreY - (contextSize.Y * 0.5f)),
                             ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Muted),
                             options.ContextLabel);
+                        cursorX += contextSize.X + (12f * scale);
+                    }
+                }
+
+                if (options.EnableWindowDragging)
+                {
+                    var dragMinimumX = MathF.Min(cursorX, rightLimit);
+                    var dragWidth = MathF.Max(0f, rightLimit - dragMinimumX);
+                    if (dragWidth >= 12f * scale)
+                    {
+                        ImGui.SetCursorScreenPos(new Vector2(dragMinimumX, minimum.Y));
+                        ImGui.InvisibleButton(
+                            "##Modern2WindowDrag",
+                            new Vector2(dragWidth, size.Y));
+                        dragging = ImGui.IsItemActive()
+                            && ImGui.IsMouseDragging(ImGuiMouseButton.Left);
                     }
                 }
 
@@ -284,6 +345,13 @@ public static class SentinelModernAppShell
             finally
             {
                 ImGui.EndChild();
+            }
+
+            if (dragging)
+            {
+                var mouseDelta = ImGui.GetIO().MouseDelta;
+                if (mouseDelta != Vector2.Zero)
+                    ImGui.SetWindowPos(ImGui.GetWindowPos() + mouseDelta);
             }
         }
         finally
@@ -351,18 +419,25 @@ public static class SentinelModernAppShell
         float buttonSize)
     {
         var size = maximum - minimum;
+        var unified = options.SurfaceStyle == SentinelModernAppSurfaceStyle.Unified;
         SentinelModernPaint.GradientSurface(
             ImGui.GetWindowDrawList(),
             minimum,
             maximum,
-            SentinelModernPaint.WithAlpha(SentinelModernPalette.SurfaceRail, 0.94f),
-            SentinelModernPaint.WithAlpha(SentinelModernPalette.Canvas, 0.92f),
+            SentinelModernPaint.WithAlpha(
+                SentinelModernPalette.SurfaceRail,
+                unified ? 0.34f : 0.94f),
+            SentinelModernPaint.WithAlpha(
+                SentinelModernPalette.Canvas,
+                unified ? 0.18f : 0.92f),
             0f);
         SentinelModernPaint.Hairline(
             ImGui.GetWindowDrawList(),
             new Vector2(maximum.X - 0.5f, minimum.Y),
             new Vector2(maximum.X - 0.5f, maximum.Y),
-            SentinelModernPaint.WithAlpha(SentinelModernPalette.Border, 0.55f));
+            SentinelModernPaint.WithAlpha(
+                SentinelModernPalette.Border,
+                unified ? 0.32f : 0.55f));
 
         ImGui.SetCursorScreenPos(minimum);
         ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
@@ -403,20 +478,36 @@ public static class SentinelModernAppShell
         Action draw,
         Vector2 minimum,
         Vector2 maximum,
-        float scale)
+        float scale,
+        SentinelModernAppSurfaceStyle surfaceStyle)
     {
-        SentinelModernPaint.GlassCard(
-            ImGui.GetWindowDrawList(),
-            minimum,
-            maximum,
-            0f,
-            SentinelModernPalette.Accent,
-            0.03f);
+        if (surfaceStyle == SentinelModernAppSurfaceStyle.Segmented)
+        {
+            SentinelModernPaint.GlassCard(
+                ImGui.GetWindowDrawList(),
+                minimum,
+                maximum,
+                0f,
+                SentinelModernPalette.Accent,
+                0.03f);
+        }
+        else
+        {
+            ImGui.GetWindowDrawList().AddRectFilled(
+                minimum,
+                maximum,
+                ImGui.ColorConvertFloat4ToU32(SentinelModernPaint.WithAlpha(
+                    SentinelModernPalette.SurfaceGlassBottom,
+                    0.14f)));
+        }
+
         SentinelModernPaint.Hairline(
             ImGui.GetWindowDrawList(),
             new Vector2(maximum.X - 0.5f, minimum.Y),
             new Vector2(maximum.X - 0.5f, maximum.Y),
-            SentinelModernPaint.WithAlpha(SentinelModernPalette.Border, 0.55f));
+            SentinelModernPaint.WithAlpha(
+                SentinelModernPalette.Border,
+                surfaceStyle == SentinelModernAppSurfaceStyle.Unified ? 0.32f : 0.55f));
         DrawChild(
             "##Modern2Secondary",
             minimum,
@@ -469,15 +560,20 @@ public static class SentinelModernAppShell
         Action draw,
         Vector2 minimum,
         Vector2 size,
-        float scale)
+        float scale,
+        SentinelModernAppSurfaceStyle surfaceStyle)
     {
         var maximum = minimum + size;
         SentinelModernPaint.GradientSurface(
             ImGui.GetWindowDrawList(),
             minimum,
             maximum,
-            SentinelModernPaint.WithAlpha(SentinelModernPalette.SurfaceDock, 0.98f),
-            SentinelModernPaint.WithAlpha(SentinelModernPalette.Canvas, 0.98f),
+            SentinelModernPaint.WithAlpha(
+                SentinelModernPalette.SurfaceDock,
+                surfaceStyle == SentinelModernAppSurfaceStyle.Unified ? 0.58f : 0.98f),
+            SentinelModernPaint.WithAlpha(
+                SentinelModernPalette.Canvas,
+                surfaceStyle == SentinelModernAppSurfaceStyle.Unified ? 0.52f : 0.98f),
             9f * scale);
         SentinelModernPaint.Hairline(
             ImGui.GetWindowDrawList(),
@@ -543,5 +639,7 @@ public static class SentinelModernAppShell
             throw new ArgumentException("Provide either PluginGlyph or DrawPluginIcon.", nameof(options));
         if (options.Status is { } status)
             _ = SentinelModernStatusPill.ResolveColour(status);
+        if (!Enum.IsDefined(options.SurfaceStyle))
+            throw new ArgumentOutOfRangeException(nameof(options), "Surface style is not defined.");
     }
 }

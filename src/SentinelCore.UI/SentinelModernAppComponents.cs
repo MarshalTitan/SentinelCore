@@ -5,14 +5,27 @@ namespace SentinelCore.UI;
 
 public readonly record struct SentinelModernNavBadge(Vector4 Colour, bool Pulse = false);
 
+public readonly record struct SentinelModernNavIconDrawContext(
+    ImDrawListPtr DrawList,
+    Vector2 Minimum,
+    Vector2 Maximum,
+    Vector4 Colour,
+    float Scale);
+
 public readonly record struct SentinelModernNavItem(
     string Id,
-    string Icon,
+    string? Icon,
     string Label)
 {
     public SentinelModernNavBadge? Badge { get; init; }
 
     public bool Enabled { get; init; } = true;
+
+    /// <summary>
+    /// Optional retained icon renderer for Font Awesome glyphs, plugin textures, or other
+    /// consumer-owned scalable icon sources. Core continues to own placement and state colours.
+    /// </summary>
+    public Action<SentinelModernNavIconDrawContext>? DrawIcon { get; init; }
 }
 
 /// <summary>
@@ -111,16 +124,28 @@ public static class SentinelModernIconRail
                     11f * scale);
             }
 
-            var iconSize = ImGui.CalcTextSize(item.Icon);
             var iconColour = !item.Enabled
                 ? SentinelModernPalette.Subtle
                 : index == selectedIndex
                     ? SentinelModernPalette.Text
                     : Vector4.Lerp(SentinelModernPalette.Muted, SentinelModernPalette.Text, hover);
-            drawList.AddText(
-                minimum + ((new Vector2(buttonSize) - iconSize) * 0.5f),
-                ImGui.ColorConvertFloat4ToU32(iconColour),
-                item.Icon);
+            if (item.DrawIcon is not null)
+            {
+                item.DrawIcon(new SentinelModernNavIconDrawContext(
+                    drawList,
+                    minimum,
+                    maximum,
+                    iconColour,
+                    scale));
+            }
+            else
+            {
+                var iconSize = ImGui.CalcTextSize(item.Icon!);
+                drawList.AddText(
+                    minimum + ((new Vector2(buttonSize) - iconSize) * 0.5f),
+                    ImGui.ColorConvertFloat4ToU32(iconColour),
+                    item.Icon!);
+            }
 
             if (item.Badge is { } badge)
             {
@@ -163,8 +188,9 @@ public static class SentinelModernIconRail
     private static void Validate(SentinelModernNavItem item)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(item.Id);
-        ArgumentException.ThrowIfNullOrWhiteSpace(item.Icon);
         ArgumentException.ThrowIfNullOrWhiteSpace(item.Label);
+        if (item.DrawIcon is null && string.IsNullOrWhiteSpace(item.Icon))
+            throw new ArgumentException("Provide either an icon glyph or DrawIcon callback.", nameof(item));
     }
 
     private static void ShowTooltip(string text)
@@ -205,9 +231,29 @@ public static class SentinelModernSecondaryNavigation
         bool selected,
         SentinelModernMotion motion,
         float scale = 1f)
+        => DrawItem(id, icon, label, selected, motion, scale);
+
+    /// <summary>
+    /// Draws a clean text-only secondary category row. Primary destinations belong in the icon
+    /// rail; secondary categories do not require decorative letter prefixes.
+    /// </summary>
+    public static bool Item(
+        string id,
+        string label,
+        bool selected,
+        SentinelModernMotion motion,
+        float scale = 1f)
+        => DrawItem(id, null, label, selected, motion, scale);
+
+    private static bool DrawItem(
+        string id,
+        string? icon,
+        string label,
+        bool selected,
+        SentinelModernMotion motion,
+        float scale)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
-        ArgumentException.ThrowIfNullOrWhiteSpace(icon);
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
         ArgumentNullException.ThrowIfNull(motion);
         if (!float.IsFinite(scale) || scale <= 0f)
@@ -261,13 +307,19 @@ public static class SentinelModernSecondaryNavigation
                 2f * scale);
         }
 
-        var iconSize = ImGui.CalcTextSize(icon);
         var labelSize = ImGui.CalcTextSize(label);
         var colour = selected ? SentinelModernPalette.Text : SentinelModernPalette.Muted;
-        var iconPosition = new Vector2(minimum.X + (10f * scale), minimum.Y + ((height - iconSize.Y) * 0.5f));
-        drawList.AddText(iconPosition, ImGui.ColorConvertFloat4ToU32(colour), icon);
+        var labelX = minimum.X + (12f * scale);
+        if (!string.IsNullOrWhiteSpace(icon))
+        {
+            var iconSize = ImGui.CalcTextSize(icon);
+            var iconPosition = new Vector2(labelX, minimum.Y + ((height - iconSize.Y) * 0.5f));
+            drawList.AddText(iconPosition, ImGui.ColorConvertFloat4ToU32(colour), icon);
+            labelX += iconSize.X + (9f * scale);
+        }
+
         drawList.AddText(
-            new Vector2(iconPosition.X + iconSize.X + (9f * scale), minimum.Y + ((height - labelSize.Y) * 0.5f)),
+            new Vector2(labelX, minimum.Y + ((height - labelSize.Y) * 0.5f)),
             ImGui.ColorConvertFloat4ToU32(colour),
             label);
         return clicked;
@@ -502,19 +554,53 @@ public static class SentinelModernSettingsRow
         Action drawControl,
         float controlWidth = 180f,
         float scale = 1f)
+        => Draw(
+            id,
+            label,
+            description,
+            drawControl,
+            SentinelModernSettingsRowLayoutOptions.Default with
+            {
+                PreferredControlWidth = controlWidth,
+                MinimumControlWidth = MathF.Min(
+                    controlWidth,
+                    SentinelModernSettingsRowLayoutOptions.Default.MinimumControlWidth),
+            },
+            scale);
+
+    public static void Draw(
+        string id,
+        string label,
+        string? description,
+        Action drawControl,
+        SentinelModernSettingsRowLayoutOptions layoutOptions,
+        float scale = 1f)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
         ArgumentNullException.ThrowIfNull(drawControl);
-        if (!float.IsFinite(controlWidth) || controlWidth <= 0f)
-            throw new ArgumentOutOfRangeException(nameof(controlWidth));
         if (!float.IsFinite(scale) || scale <= 0f)
             throw new ArgumentOutOfRangeException(nameof(scale));
+        if (layoutOptions == default)
+            layoutOptions = SentinelModernSettingsRowLayoutOptions.Default;
 
-        var height = string.IsNullOrWhiteSpace(description) ? 42f * scale : 56f * scale;
         var width = ImGui.GetContentRegionAvail().X;
+        var columns = SentinelModernSettingsRowLayout.ResolveColumns(width, scale, layoutOptions);
+        var labelSize = ImGui.CalcTextSize(label);
+        var hasDescription = !string.IsNullOrWhiteSpace(description);
+        var descriptionSize = hasDescription
+            ? ImGui.CalcTextSize(description, false, columns.TextWidth)
+            : Vector2.Zero;
+        var layout = SentinelModernSettingsRowLayout.Resolve(
+            width,
+            labelSize.Y,
+            descriptionSize.Y,
+            ImGui.GetFrameHeight(),
+            hasDescription,
+            scale,
+            layoutOptions);
         var minimum = ImGui.GetCursorScreenPos();
-        var maximum = minimum + new Vector2(width, height);
+        var maximum = minimum + layout.Size;
         SentinelModernPaint.GlassCard(
             ImGui.GetWindowDrawList(),
             minimum,
@@ -528,7 +614,7 @@ public static class SentinelModernSettingsRow
         {
             var visible = ImGui.BeginChild(
                 id,
-                new Vector2(width, height),
+                layout.Size,
                 false,
                 ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
             try
@@ -537,28 +623,27 @@ public static class SentinelModernSettingsRow
                     return;
 
                 var drawList = ImGui.GetWindowDrawList();
-                var labelSize = ImGui.CalcTextSize(label);
-                var textX = minimum.X + (13f * scale);
-                var labelY = string.IsNullOrWhiteSpace(description)
-                    ? minimum.Y + ((height - labelSize.Y) * 0.5f)
-                    : minimum.Y + (10f * scale);
+                var textPosition = minimum + layout.TextOffset;
                 drawList.AddText(
-                    new Vector2(textX, labelY),
+                    textPosition,
                     ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Text),
                     label);
-                if (!string.IsNullOrWhiteSpace(description))
+                if (hasDescription)
                 {
+                    var descriptionY = textPosition.Y
+                        + labelSize.Y
+                        + (layoutOptions.DescriptionGap * scale);
                     drawList.AddText(
-                        new Vector2(textX, labelY + labelSize.Y + (4f * scale)),
+                        ImGui.GetFont(),
+                        ImGui.GetFontSize(),
+                        new Vector2(textPosition.X, descriptionY),
                         ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Muted),
-                        description);
+                        description!,
+                        layout.TextWidth);
                 }
 
-                var effectiveControlWidth = MathF.Min(controlWidth * scale, width * 0.48f);
-                ImGui.SetCursorScreenPos(new Vector2(
-                    maximum.X - effectiveControlWidth - (12f * scale),
-                    minimum.Y + ((height - ImGui.GetFrameHeight()) * 0.5f)));
-                ImGui.SetNextItemWidth(effectiveControlWidth);
+                ImGui.SetCursorScreenPos(minimum + layout.ControlOffset);
+                ImGui.SetNextItemWidth(layout.ControlWidth);
                 drawControl();
             }
             finally
