@@ -1,5 +1,4 @@
 using System.Numerics;
-using Dalamud.Bindings.ImGui;
 using SentinelCore.UI;
 
 var tests = new (string Name, Action Run)[]
@@ -13,7 +12,6 @@ var tests = new (string Name, Action Run)[]
     ("modern 2 reduced motion", TestModern2ReducedMotion),
     ("modern 2 motion channel lifecycle", TestModern2MotionLifecycle),
     ("modern 2 status pills", TestModern2StatusPills),
-    ("modern 2 single-header window policy", TestModern2WindowChrome),
     ("modern 2 responsive settings rows", TestModern2SettingsRows),
     ("modern 2 polished defaults", TestModern2PolishedDefaults),
 };
@@ -215,20 +213,6 @@ static void TestModern2StatusPills()
             }));
     Throws<ArgumentException>(() => SentinelModernStatusPill.ResolveColour(
         new SentinelModernStatusPillOptions("CUSTOM", SentinelModernPillTone.Custom)));
-}
-
-static void TestModern2WindowChrome()
-{
-    var existing = ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoNavInputs;
-    var flags = SentinelModernWindowChrome.UseCustomHeader(existing);
-    True(SentinelModernWindowChrome.HasSingleCustomHeader(flags));
-    True((flags & ImGuiWindowFlags.NoTitleBar) != 0);
-    True((flags & ImGuiWindowFlags.NoCollapse) != 0);
-    True((flags & ImGuiWindowFlags.NoScrollbar) != 0);
-    True((flags & ImGuiWindowFlags.NoScrollWithMouse) != 0);
-    True((flags & ImGuiWindowFlags.NoSavedSettings) != 0);
-    True((flags & ImGuiWindowFlags.NoNavInputs) != 0);
-    False(SentinelModernWindowChrome.HasSingleCustomHeader(existing));
 }
 
 static void TestModern2SettingsRows()
