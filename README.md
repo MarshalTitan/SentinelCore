@@ -14,8 +14,8 @@ until they are deliberately migrated in separate, tested work.
 | `MarshalTitan.SentinelCore.Dalamud` | `net10.0-windows` / Dalamud API 15 | Dalamud configuration and logging adapters plus dynamic `ClassJob` metadata |
 | `MarshalTitan.SentinelCore.UI` | `net10.0-windows` / Dalamud API 15 | Classic and opt-in Sentinel Modern palettes, application shell, navigation, motion, glass surfaces, controls, role colours, and balanced ImGui scopes |
 
-All three libraries carry assembly/file version `0.3.0.0`. NuGet packages use the normalized package
-version `0.3.0`; releases and Git tags use the Sentinel four-part tag `v0.3.0.0`.
+All three libraries carry assembly/file version `0.3.1.0`. NuGet packages use the normalized package
+version `0.3.1`; releases and Git tags use the Sentinel four-part tag `v0.3.1.0`.
 
 ## Sentinel Modern 2
 
@@ -25,16 +25,22 @@ shell. Its canonical shared pieces include:
 - a 56px compact header and 64px icon navigation rail;
 - an optional 196px secondary settings sidebar;
 - an optional 72px action/status dock;
+- a unified, full-bleed application surface and single-custom-header window policy;
+- retained custom icon rendering for Font Awesome glyphs or consumer-owned textures;
+- clean text-only secondary navigation without letter placeholders;
+- responsive settings rows that stack controls before text can overlap;
 - frame-rate-independent hover, selection, page-reveal, pulse, and ambient motion;
 - deterministic reduced-motion behavior;
-- procedural blue, violet, and teal background glows;
+- more visible procedural blue, violet, and teal background glows and rings;
 - glass cards, gradient surfaces, shadows, glows, highlights, separators, pills, progress bars,
   status dots, settings rows, and controller-aware switches.
 
 All measurements are logical pixels and scale with Dalamud UI scaling. Primary and secondary
 navigation always remain on the left; the shared layout never stacks navigation above content.
 The shell draws inside a consumer-owned Dalamud window, keeping window lifetime, saved position,
-resizing, and close/collapse policy under the consumer's control.
+resizing, and close/collapse policy under the consumer's control. `SentinelModernWindowChrome`,
+`SentinelModernStyleScope.PushAppShell`, and opt-in header dragging provide the canonical frameless
+integration without changing older configuration-shell consumers.
 
 ## Design rules
 

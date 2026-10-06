@@ -9,15 +9,15 @@ SentinelHUD supplied the live-tested Sentinel Modern reference implementation an
 ## Option A: exact release packages
 
 1. Download the three `.nupkg` files attached to the chosen Sentinel Core GitHub release.
-2. Commit only the package or packages the plugin actually consumes beneath a plugin-local feed, for example `.packages/SentinelCore/v0.3.0.0/`.
+2. Commit only the package or packages the plugin actually consumes beneath a plugin-local feed, for example `.packages/SentinelCore/v0.3.1.0/`.
 3. Add that directory as a package source in the consumer repository's `NuGet.Config`.
 4. Pin the normalized package version exactly; do not use a wildcard or version range.
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="MarshalTitan.SentinelCore" Version="0.3.0" />
-  <PackageReference Include="MarshalTitan.SentinelCore.Dalamud" Version="0.3.0" />
-  <PackageReference Include="MarshalTitan.SentinelCore.UI" Version="0.3.0" />
+  <PackageReference Include="MarshalTitan.SentinelCore" Version="0.3.1" />
+  <PackageReference Include="MarshalTitan.SentinelCore.Dalamud" Version="0.3.1" />
+  <PackageReference Include="MarshalTitan.SentinelCore.UI" Version="0.3.1" />
 </ItemGroup>
 ```
 
@@ -29,7 +29,7 @@ Add Sentinel Core as a submodule pinned to an immutable release tag or commit, t
 
 ```powershell
 git submodule add https://github.com/MarshalTitan/SentinelCore.git external/SentinelCore
-git -C external/SentinelCore checkout v0.3.0.0
+git -C external/SentinelCore checkout v0.3.1.0
 ```
 
 ```xml
@@ -63,7 +63,7 @@ The normalization callback is the plugin's migration/repair boundary. It should 
 
 ## Existing Sentinel Modern configuration shell
 
-Reference `MarshalTitan.SentinelCore.UI` `0.3.0` and keep the consumer's persisted default at Classic.
+Reference `MarshalTitan.SentinelCore.UI` `0.3.1` and keep the consumer's persisted default at Classic.
 The plugin can then expose `Classic` and `Sentinel Modern` as an explicit configuration choice.
 
 Create one `SentinelModernStyleScope` per window and reuse it:
@@ -82,7 +82,7 @@ navigation, card, switch, chip, scaling, and theme-state example.
 
 The `0.2.1` `SentinelModernConfigurationShell`, `SentinelModernNavigation`,
 `SentinelModernCard`, `SentinelModernControls`, and `SentinelModernUi` APIs remain available and
-unchanged in `0.3.0`. Merely updating the package does not switch a consumer to Modern 2.
+unchanged in `0.3.1`. Merely updating the package does not switch a consumer to Modern 2.
 
 ## Opting into Sentinel Modern 2
 
@@ -93,9 +93,9 @@ delegate and animation-state rebuilding.
 private readonly SentinelModernAppShellState shellState = new();
 private readonly SentinelModernNavItem[] primaryNavigation =
 [
-    new("Home", "H", "Home"),
-    new("Settings", "S", "Settings"),
-    new("Diagnostics", "D", "Diagnostics")
+    new("Home", "⌂", "Home"),
+    new("Settings", "⚙", "Settings"),
+    new("Diagnostics", "◉", "Diagnostics")
     {
         Badge = new SentinelModernNavBadge(SentinelModernPalette.Rose),
     },
@@ -115,6 +115,30 @@ drawDock = DrawActionDock;
 closeWindow = () => IsOpen = false;
 ```
 
+For production UI, use retained `DrawIcon` callbacks with the consumer's Font Awesome font or
+texture handles rather than letter placeholders. Core supplies the icon bounds, current state
+colour, and scale through `SentinelModernNavIconDrawContext`, while continuing to own the input
+target, tooltip, badge, hover, and selection rendering.
+
+For the full-bleed application treatment, push the app-shell style in `PreDraw` and restore it in
+`PostDraw`:
+
+```csharp
+private readonly ImGuiWindowFlags standardWindowFlags = ImGuiWindowFlags.None;
+
+public override void PreDraw()
+{
+    Flags = SentinelModernWindowChrome.UseCustomHeader(standardWindowFlags);
+    modernStyle.PushAppShell(ImGuiHelpers.GlobalScale);
+}
+
+public override void PostDraw() => modernStyle.Pop();
+```
+
+Only apply the custom-header flags in Modern mode. A consumer offering Classic should restore its
+saved `standardWindowFlags` and retain its existing native title bar and style in Classic mode.
+Core never changes another window globally.
+
 Draw the shell inside the existing Dalamud `Window.Draw` method:
 
 ```csharp
@@ -124,12 +148,12 @@ var options = new SentinelModernAppShellOptions(
     selectedPageId)
 {
     PluginGlyph = "S", // Or use DrawPluginIcon for a consumer-owned texture.
-    ContextLabel = "Sentinel Modern 2",
     Status = new SentinelModernStatusPillOptions("READY", SentinelModernPillTone.Ready),
     Scale = ImGuiHelpers.GlobalScale,
     DeltaTime = ImGui.GetIO().DeltaTime,
     ReducedMotion = pluginInterface.UiBuilder.ShouldUseReducedMotion,
-    AmbientIntensity = 0.72f,
+    AmbientIntensity = 0.9f,
+    EnableWindowDragging = true,
     RequestClose = closeWindow,
 };
 
@@ -145,13 +169,18 @@ SentinelModernAppShell.Draw(
 
 Simple plugins should omit both optional callbacks for `icon rail → content`. Complex settings may
 provide the secondary callback for `icon rail → categories → content`. The category callback uses
-`SentinelModernSecondaryNavigation.GroupLabel` and `.Item`. The dock callback may use
+`SentinelModernSecondaryNavigation.GroupLabel` and the text-only `.Item` overload. The older
+icon-and-label overload remains available for consumers that intentionally need category icons.
+The dock callback may use
 `SentinelModernActionDock.PrimaryButton`, `.DangerButton`, and `.Status`.
 
 Use `SentinelModernGlassCard.Begin` for content groups, `SentinelModernSettingsRow.Draw` for compact
 label/control rows, `SentinelModernSwitch.Draw` for a controller-aware switch, and
 `SentinelModernStatusPill.Draw` for page-level statuses. `SentinelModernPaint` exposes the shared
 surface primitives for plugin-specific visualizations without duplicating palette or paint logic.
+Settings rows measure wrapped descriptions and automatically switch from two columns to a vertical
+stack before the label and control regions can overlap. Consumers should not position a combo or
+slider manually over the row's text region.
 
 Reduced motion must be passed from `UiBuilder.ShouldUseReducedMotion`. Core then makes page and
 selection transitions immediate, freezes ambient drift, and suppresses status/badge pulses without

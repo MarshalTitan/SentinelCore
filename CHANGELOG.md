@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.1.0
+
+- Adds the canonical single-custom-header window policy, full-bleed app-shell style scope, and
+  opt-in draggable header region so Modern consumers can remove the duplicate native title bar
+  while retaining consumer-owned position, resizing, close, and collapse state.
+- Refines Modern 2 into one continuous application surface with quieter separators instead of
+  boxed rail/sidebar/content regions; the previous segmented treatment remains selectable.
+- Adds retained primary-navigation icon render callbacks for scalable icon fonts or consumer-owned
+  textures while Core continues to own hit targets, tooltips, state colours, badges, and motion.
+- Adds clean text-only secondary navigation rows so category labels no longer need decorative
+  letter prefixes; the existing icon-and-label overload remains available.
+- Reworks settings-row geometry into a tested responsive resolver with wrapped descriptions,
+  stable control columns, and safe narrow-width stacking so combos and sliders cannot cover text.
+- Makes the procedural blue, violet, and teal ambient circles noticeably more visible with a small
+  fixed number of layered fills and ring highlights while retaining deterministic reduced motion.
+- Keeps Classic Sentinel, the original Modern configuration shell, and every `0.3.0` public entry
+  point available so consumers can adopt the polished shell incrementally.
+
 ## 0.3.0.0
 
 - Adds the opt-in `SentinelModernAppShell` application layout with a compact single-row header,
