@@ -36,10 +36,13 @@ MarshalTitan.SentinelCore.UI ─────┘
 - Adds the separate opt-in Modern 2 application shell: compact header, fixed icon rail, optional
   secondary sidebar and action dock, per-window motion state, reduced-motion handling, animated
   procedural ambience, glass surfaces, settings rows, pills, progress, and controller-aware controls.
+- Adds an opt-in full-bleed/single-custom-header policy, continuous shell surfaces, retained custom
+  icon callbacks, text-only secondary categories, and renderer-independent responsive row geometry.
 - Keeps all original Modern APIs unchanged; package adoption and Modern 2 adoption are separate
   consumer decisions.
-- Leaves the top-level Dalamud window with the consumer so native title-bar close/collapse, resizing,
-  scale, position persistence, and window lifetime remain consumer-controlled.
+- Leaves the top-level Dalamud window with the consumer. Classic and original Modern consumers can
+  retain native title-bar close/collapse; Modern 2 consumers can select the Core custom-header flags
+  and dragging policy. Resizing, scale, position persistence, and lifetime remain consumer-owned.
 - Keeps theme and page selection local to each consumer; unknown persisted theme values fall back to Classic.
 - Exposes the established role hues: tank blue, healer green, melee red, physical ranged orange, magical ranged purple, and neutral grey.
 - Uses disposable style scopes so every pushed ImGui colour/variable is popped exactly once.

@@ -9,7 +9,7 @@ switch any consumer automatically; each plugin chooses and persists its own them
 
 ## Sentinel Modern 2 application shell
 
-Modern 2 is a new, opt-in application-shell layer in package `0.3.0`. It does not redefine the
+Modern 2 is a new, opt-in application-shell layer in package `0.3.1`. It does not redefine the
 existing `SentinelModernConfigurationShell`; consumers can upgrade their package first and migrate
 their window later.
 
@@ -35,17 +35,20 @@ content`. The action dock is present only when the consumer supplies its drawing
 | `SentinelModernAppShell` | Compact header, primary rail, content, optional secondary sidebar, and optional dock |
 | `SentinelModernAppShellState` | Per-window page transition and bounded motion-channel ownership |
 | `SentinelModernAppLayout` | Tested logical sizing, scaling, minimum-size calculation, and non-stacking policy |
-| `SentinelModernIconRail` | Icon buttons, tooltips, animated indicator, hover state, and optional badge |
-| `SentinelModernSecondaryNavigation` | Canonical icon/label category rows |
+| `SentinelModernWindowChrome` | Additive top-level flags for one custom header without discarding consumer flags |
+| `SentinelModernStyleScope.PushAppShell` | Full-bleed window padding and borderless shell children |
+| `SentinelModernIconRail` | Glyph or retained custom-icon buttons, tooltips, animated indicator, hover state, and optional badge |
+| `SentinelModernSecondaryNavigation` | Canonical text-only categories plus the compatible icon/label overload |
 | `SentinelModernMotion` | Frame-rate-independent smoothing, hover, wave, pulse, and reduced-motion behavior |
 | `SentinelModernPaint` | Gradients, glass, shadow, glow, highlight, separator, pill, progress, and status dot |
 | `SentinelModernGlassCard` | Balanced, translucent card child scope |
-| `SentinelModernSettingsRow` | Compact label/description/control row |
+| `SentinelModernSettingsRow` | Wrapped responsive label/description/control row with safe narrow stacking |
+| `SentinelModernSettingsRowLayout` | Renderer-independent column, wrapping, height, and overlap-prevention geometry |
 | `SentinelModernSwitch` | Standard ImGui activation with Core-owned switch rendering and motion |
 | `SentinelModernStatusPill` | Ready, enabled, running, warning, error, neutral, accent, and custom pills |
 | `SentinelModernPageTransition` | Optional 240ms content-only fade and 10px slide |
 | `SentinelModernActionDock` | Optional primary, danger, and status helpers for consumer-owned actions |
-| `SentinelModernAmbient.DrawAnimated` | Three low-opacity drifting blue/violet/teal procedural glows |
+| `SentinelModernAmbient.DrawAnimated` | Three visible drifting blue/violet/teal procedural glows and ring highlights |
 
 The primary and secondary navigation and the Modern 2 switch use standard ImGui buttons as their
 input targets. Mouse, keyboard, and controller activation therefore remain functional even though
@@ -55,10 +58,16 @@ Pass `pluginInterface.UiBuilder.ShouldUseReducedMotion` into the shell options e
 reduced motion enabled, selection and page changes become immediate, ambient centres stay fixed,
 and optional pulses become static. Layout and input behavior do not change.
 
-The custom header supports a consumer-owned icon callback or glyph, compact status pill, context
-label, and optional minimize/close callbacks. Core still does not own the top-level window: the
-consumer decides whether to retain the native Dalamud title bar or use its own window flags and bind
-the shared header callbacks. Header and navigation children explicitly disallow scrolling.
+The custom header supports a consumer-owned icon callback or glyph, compact status pill, optional
+context label, minimize/close callbacks, and an opt-in draggable empty region. Core still does not
+own the top-level window. A Modern consumer uses `SentinelModernWindowChrome.UseCustomHeader`,
+`SentinelModernStyleScope.PushAppShell`, and `EnableWindowDragging = true` to present the Core header
+as its only title bar. A Classic renderer can retain its native Dalamud title bar. Header and
+navigation children explicitly disallow scrolling.
+
+The default `Unified` surface style paints one continuous application canvas with only hairline
+navigation separators. `Segmented` remains available for a consumer that deliberately wants the
+original Modern 2 panel treatment.
 
 See [ADOPTION.md](../ADOPTION.md) for a complete retained-state integration example.
 
@@ -77,7 +86,7 @@ See [ADOPTION.md](../ADOPTION.md) for a complete retained-state integration exam
 | `SentinelThemeState<TPage>` | Renderer-independent opt-in theme and selected-page state |
 | `SentinelModernLayout` | Tested sidebar sizing with an explicit opt-in stacked layout for non-standard consumers |
 
-## Window integration
+## Original configuration-shell window integration
 
 Keep Dalamud's `Window` as the owner of the top-level window. The Core shell only draws inside it,
 so title-bar close, collapse, resizing, size constraints, and position persistence continue to work.
@@ -189,6 +198,8 @@ state globally and cannot change another plugin's selection.
 ## Scaling and resizing
 
 - Pass the current Dalamud UI scale to the style scope, shell, navigation items, switches, and chips.
+- Use `PushAppShell` and zero-padding custom-header flags only for Modern 2; retain `Push` for the
+  original configuration shell and existing consumer layouts.
 - The shell always uses a bounded proportional left sidebar by default, including on narrow windows.
 - Keep a practical consumer minimum width (the example uses `620f`) so the right content pane remains useful.
 - The standard header is at least `84f` high before UI scaling and never displays its own scrollbar.
@@ -196,7 +207,8 @@ state globally and cannot change another plugin's selection.
   `Layout = SentinelModernLayoutOptions.Default with { AllowStackedNavigation = true }`; Sentinel
   configuration windows should not enable this.
 - Consumers still set their own first-use size and minimum size through Dalamud's `Window` API.
-- Set `DrawAmbientBackground = false` for a flat canvas, or reduce `AmbientIntensity` for a quieter effect.
+- Modern 2 defaults ambient intensity to `0.9`. Set `DrawAmbientBackground = false` for a flat
+  canvas, or reduce `AmbientIntensity` for a quieter effect.
 
 ## Push/pop safety
 
