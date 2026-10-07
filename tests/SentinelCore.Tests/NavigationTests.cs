@@ -62,6 +62,16 @@ internal static class NavigationTests
     }
     private static void ZoneAndReadiness()
     {
+        var clock = new Clock();
+        var gate = new ZoneReadinessGate(TimeSpan.FromSeconds(2), clock);
+        var zone = new ZoneStamp(1, 1);
+        Check(gate.Observe(zone, false, true, -1) is null, "new epoch trusted immediately");
+        clock.Advance(2);
+        Check(gate.Observe(zone, false, true, -1) == zone, "stable ready never confirmed");
+        Check(gate.Observe(new(1, 2), false, true, -1) is null, "same-territory epoch not reset");
+        clock.Advance(2);
+        Check(gate.Observe(new(1, 2), false, true, 0) is null, "building accepted by gate");
+        Check(gate.Observe(new(1, 2), false, true, -1) is null, "build did not reset settle");
         using var h = new Harness();
         h.Backend.State = h.Backend.State with { MeshZone = null };
         var op = h.Start(); h.Core.Tick();
