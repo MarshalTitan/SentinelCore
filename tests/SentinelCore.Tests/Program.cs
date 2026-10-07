@@ -7,6 +7,7 @@ using SentinelCore.Lifecycle;
 
 var tests = new (string Name, Action Run)[]
 {
+    ("shared navigation and sanitized diagnostics", NavigationTests.Run),
     ("four-part versions", TestVersions),
     ("identity validation", TestIdentity),
     ("configuration coordination", TestConfiguration),
