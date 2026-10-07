@@ -16,8 +16,12 @@ internal static class NavigationTests
         WaypointProgress();
         FlightLifecycle();
         LandingAndDiagnostics();
+        LandingSuccess();
+        LandingFailures();
+        LandingCancellation();
+        LandingReplacementAndLateResults();
         FaultsAndThreadAffinity();
-        Console.WriteLine("PASS navigation: 9 scenario groups (ownership, cancellation, readiness, stale paths, budgets, progress, flight, export, faults)");
+        Console.WriteLine("PASS navigation: 13 scenario groups (ownership, cancellation, readiness, stale paths, budgets, progress, flight, export, faults)");
     }
     private static void Check(bool value, string message)
     { if (!value) throw new InvalidOperationException(message); }
@@ -186,6 +190,142 @@ internal static class NavigationTests
         for (var i = 0; i < 20; ++i) h.Start().Cancel();
         Check(h.Diagnostics.Snapshot().Count == 16, "diagnostics unbounded");
     }
+    private static NavigationOperation StartLanding(Harness h)
+    {
+        var op = h.Core.Begin(new(Target) { RequireLanding = true });
+        h.Core.Tick(); h.Complete(); h.Core.Tick();
+        h.Backend.State = h.Backend.State with { Position = Target };
+        h.Core.Tick();
+        Check(op.State == NavigationState.Landing && op.Result == NavigationResult.Pending &&
+            h.Backend.Stops == 1, "landing must retain pending operation after follower stop");
+        return op;
+    }
+    private static void LandingSuccess()
+    {
+        using var h = new Harness();
+        var op = StartLanding(h);
+        h.Core.Tick(); h.Core.Tick();
+        Check(h.Backend.Landings == 1 && op.Result == NavigationResult.Pending,
+            "landing request spammed or action acceptance became success");
+        h.Backend.State = h.Backend.State with { InFlight = false, Grounded = null };
+        h.Core.Tick(); h.Clock.Advance(1); h.Core.Tick();
+        Check(op.Result == NavigationResult.Pending, "InFlight alone proved ground");
+        h.Backend.State = h.Backend.State with { Grounded = true };
+        h.Core.Tick(); h.Clock.Advance(0.5); h.Core.Tick();
+        Check(op.Result == NavigationResult.Pending, "ground settle skipped");
+        h.Backend.State = h.Backend.State with { Grounded = false };
+        h.Core.Tick();
+        h.Backend.State = h.Backend.State with { Grounded = true };
+        h.Core.Tick(); h.Clock.Advance(0.8); h.Core.Tick();
+        Check(op.Result == NavigationResult.Success && h.Backend.Landings == 1,
+            "stable ground never confirmed or ground dismount requested");
+        var last = h.Diagnostics.Snapshot()[^1];
+        Check(last.Reason == NavigationReason.GroundConfirmed && last.PhysicalContext.Grounded == true &&
+            !last.PhysicalContext.InFlight, "grounded success evidence missing");
+        using var legacy = new Harness();
+        var normal = legacy.Follow();
+        legacy.Backend.State = legacy.Backend.State with { Position = Target };
+        legacy.Core.Tick();
+        Check(normal.Result == NavigationResult.Success && legacy.Backend.Landings == 0,
+            "legacy destination arrival changed");
+        using var unsupported = new NavigationCoordinator(new LegacyBackend(), h.Diagnostics);
+        Throws<NotSupportedException>(() => unsupported.Begin(new(Target) { RequireLanding = true }));
+    }
+    private static void LandingFailures()
+    {
+        using var h = new Harness();
+        h.Backend.AcceptLanding = false;
+        var op = StartLanding(h);
+        h.Core.Tick();
+        Check(h.Diagnostics.Snapshot()[^1].Reason == NavigationReason.LandingRejected,
+            "rejected landing hidden");
+        h.Clock.Advance(19); h.Core.Tick();
+        Check(op.Result == NavigationResult.Pending, "landing deadline premature");
+        h.Clock.Advance(1); h.Core.Tick();
+        Check(op.Result == NavigationResult.Failure &&
+            h.Diagnostics.Snapshot()[^1].Reason == NavigationReason.LandingTimeout,
+            "landing retries reset timeout");
+        var requests = h.Backend.Landings;
+        h.Clock.Advance(100); h.Core.Tick();
+        Check(h.Backend.Landings == requests, "terminal landing action continued");
+        using var drift = new Harness();
+        var d = StartLanding(drift);
+        drift.Backend.State = drift.Backend.State with { Position = Target + new Vector3(4, 0, 0) };
+        drift.Core.Tick();
+        Check(d.Result == NavigationResult.Failure && drift.Backend.Landings == 0 &&
+            drift.Diagnostics.Snapshot()[^1].Reason == NavigationReason.LandingDrift, "unsafe landing drift accepted");
+        using var mesh = new Harness();
+        var m = StartLanding(mesh);
+        mesh.Backend.State = mesh.Backend.State with { MeshReady = false };
+        mesh.Core.Tick();
+        Check(m.Result == NavigationResult.Failure && mesh.Backend.Takeoffs == 0,
+            "landing dependency loss restarted flight");
+        using var high = new Harness();
+        var p = StartLanding(high);
+        high.Backend.State = high.Backend.State with { Position = Target + new Vector3(0, 2, 0),
+            InFlight = false, Grounded = true };
+        high.Core.Tick(); high.Clock.Advance(21); high.Core.Tick();
+        Check(p.Result == NavigationResult.Failure, "ground evidence far above intended floor accepted");
+    }
+    private static void LandingCancellation()
+    {
+        using var h = new Harness();
+        var op = StartLanding(h);
+        h.Core.Tick();
+        op.Cancel(); op.Dispose();
+        var actions = h.Backend.Landings;
+        h.Clock.Advance(30); h.Core.Tick();
+        Check(op.Result == NavigationResult.Cancelled && h.Backend.Landings == actions,
+            "cancelled landing kept acting");
+        using var zone = new Harness();
+        var z = StartLanding(zone);
+        zone.Backend.State = zone.Backend.State with { Zone = new(2, 2) };
+        zone.Core.Tick();
+        Check(z.Result == NavigationResult.Cancelled && zone.Backend.Landings == 0,
+            "zoning landing retained authority");
+    }
+    private static void LandingReplacementAndLateResults()
+    {
+        using var h = new Harness();
+        var landing = StartLanding(h);
+        h.Core.Tick();
+        h.Backend.State = h.Backend.State with { Position = Vector3.Zero };
+        var replacement = h.Start();
+        h.Core.Tick(); h.Complete(); h.Core.Tick();
+        var stops = h.Backend.Stops;
+        var actions = h.Backend.Landings;
+        landing.Cancel(); landing.Dispose(); h.Clock.Advance(2); h.Core.Tick();
+        Check(landing.Result == NavigationResult.Cancelled && replacement.Result == NavigationResult.Pending &&
+            h.Backend.Stops == stops && h.Backend.Landings == actions,
+            "retired landing stopped or acted on replacement");
+        using var late = new Harness();
+        var old = late.Start(); late.Core.Tick();
+        var task = late.Backend.Tasks[0];
+        var newer = StartLanding(late);
+        task.SetResult([Vector3.Zero, Target]);
+        var follows = late.Backend.Follows;
+        late.Core.Tick(); old.Dispose();
+        Check(newer.State == NavigationState.Landing && late.Backend.Follows == follows &&
+            late.Backend.Stops == 1, "late path acquired landing ownership");
+        late.Core.Dispose();
+        actions = late.Backend.Landings;
+        late.Clock.Advance(20); late.Core.Tick();
+        Check(late.Backend.Landings == actions && newer.Result == NavigationResult.Cancelled,
+            "disposed landing issued delayed actions");
+    }
+    private sealed class LegacyBackend : INavigationAdapter
+    {
+        private readonly Backend backend = new();
+        public NavigationSnapshot Read() => backend.Read();
+        public Task<IReadOnlyList<Vector3>> FindPath(Vector3 from, Vector3 to, bool fly, CancellationToken cancellation)
+            => backend.FindPath(from, to, fly, cancellation);
+        public void Follow(IReadOnlyList<Vector3> path, bool fly) => backend.Follow(path, fly);
+        public void Stop() => backend.Stop();
+        public void RequestMount() => backend.RequestMount();
+        public void RequestTakeoff() => backend.RequestTakeoff();
+        public Vector3? ProjectLanding(Vector3 candidate, float searchRadius) => backend.ProjectLanding(candidate, searchRadius);
+    }
+
     private static void FaultsAndThreadAffinity()
     {
         using var h = new Harness();
@@ -226,13 +366,14 @@ internal static class NavigationTests
         public NavigationOperation Follow() { var op = Start(); Core.Tick(); Complete(); Core.Tick(); return op; }
         public void Dispose() => Core.Dispose();
     }
-    private sealed class Backend : INavigationAdapter
+    private sealed class Backend : ILandingNavigationAdapter
     {
         public NavigationSnapshot State = new(new(1, 1), new ZoneStamp(1, 1), false, true, -1,
             Vector3.Zero, true, true, FlightAvailability.Available, false, []);
         public readonly List<TaskCompletionSource<IReadOnlyList<Vector3>>> Tasks = new();
         public readonly List<CancellationToken> Tokens = new();
-        public int Follows, Stops, Mounts, Takeoffs;
+        public int Follows, Stops, Mounts, Takeoffs, Landings;
+        public bool AcceptLanding = true;
         public bool LastFly, ThrowStop;
         public Vector3? Projected;
         public NavigationSnapshot Read() => State;
@@ -254,6 +395,8 @@ internal static class NavigationTests
         }
         public void RequestMount() => Mounts++;
         public void RequestTakeoff() => Takeoffs++;
+        public bool RequestLanding(NavigationSnapshot snapshot, Vector3 destination)
+        { Landings++; return AcceptLanding; }
         public Vector3? ProjectLanding(Vector3 candidate, float searchRadius) => Projected;
     }
 }

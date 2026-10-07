@@ -2,8 +2,8 @@ using System.Numerics;
 
 namespace SentinelCore.Navigation;
 
-public enum NavigationState { Created, WaitingForMesh, Mounting, TakingOff, Pathfinding, Following, Recovering, Arrived, Cancelled, Failed }
-public enum NavigationReason { Started, DependencyWait, MountRequested, TakeoffRequested, PathRequested, PathAccepted, Progress, DestinationReached, Cancelled, Superseded, ZoneChanged, DependencyLost, FlightChanged, InvalidPath, PathFailed, PathTimeout, Stalled, FollowerStopped, BudgetExhausted, AdapterFault }
+public enum NavigationState { Created, WaitingForMesh, Mounting, TakingOff, Pathfinding, Following, Recovering, Arrived, Cancelled, Failed, Landing }
+public enum NavigationReason { Started, DependencyWait, MountRequested, TakeoffRequested, PathRequested, PathAccepted, Progress, DestinationReached, Cancelled, Superseded, ZoneChanged, DependencyLost, FlightChanged, InvalidPath, PathFailed, PathTimeout, Stalled, FollowerStopped, BudgetExhausted, AdapterFault, LandingStarted, LandingRequested, LandingRejected, GroundConfirmed, LandingTimeout, LandingDrift }
 public enum FlightAvailability { Unknown, Unavailable, Available }
 public enum TravelMode { Ground, PreferFlight, RequireFlight }
 public enum NavigationResult { Pending, Success, Cancelled, Failure }
@@ -14,7 +14,12 @@ public readonly record struct ZoneStamp(uint Territory, long Epoch);
 public sealed record NavigationSnapshot(
     ZoneStamp Zone, ZoneStamp? MeshZone, bool Loading, bool MeshReady, float BuildProgress,
     Vector3 Position, bool Mounted, bool InFlight, FlightAvailability Flight,
-    bool Following, IReadOnlyList<Vector3> RemainingWaypoints);
+    bool Following, IReadOnlyList<Vector3> RemainingWaypoints)
+{
+    /// <summary>Physical ground evidence supplied by a landing-capable adapter; null means unknown.
+    /// Clearing InFlight or accepting an action is insufficient on its own.</summary>
+    public bool? Grounded { get; init; }
+}
 
 /// <summary>All members except the returned task run synchronously on the coordinator's thread.
 /// No adapter may submit paths from task continuations. Mount selection stays consumer-owned.
@@ -30,8 +35,20 @@ public interface INavigationAdapter
     Vector3? ProjectLanding(Vector3 candidate, float searchRadius);
 }
 
+/// <summary>Optional synchronous capability. Actions must be scoped to this operation, must never
+/// schedule delayed cleanup, and must not dismount an already-grounded character. The consumer
+/// verifies local landing safety before submitting a normal game action.</summary>
+public interface ILandingNavigationAdapter : INavigationAdapter
+{
+    bool RequestLanding(NavigationSnapshot snapshot, Vector3 destination);
+}
+
 public sealed record NavigationRequest(Vector3 Destination, TravelMode Mode = TravelMode.PreferFlight,
-    bool RequireMount = true, float ArrivalRadius = 3, bool HorizontalArrival = false);
+    bool RequireMount = true, float ArrivalRadius = 3, bool HorizontalArrival = false)
+{
+    /// <summary>Opt-in ground-confirmed completion. Existing constructor and default semantics remain intact.</summary>
+    public bool RequireLanding { get; init; }
+}
 
 public sealed record NavigationOptions
 {
@@ -44,6 +61,10 @@ public sealed record NavigationOptions
     public TimeSpan RetryDelay { get; init; } = TimeSpan.FromSeconds(2);
     public TimeSpan MountInterval { get; init; } = TimeSpan.FromSeconds(2);
     public TimeSpan TakeoffInterval { get; init; } = TimeSpan.FromSeconds(0.5);
+    public TimeSpan LandingTimeout { get; init; } = TimeSpan.FromSeconds(20);
+    public TimeSpan LandingInterval { get; init; } = TimeSpan.FromSeconds(1);
+    public TimeSpan GroundConfirmation { get; init; } = TimeSpan.FromSeconds(0.75);
+    public float LandingVerticalTolerance { get; init; } = 1.5f;
     public int MaxRetries { get; init; } = 2;
     public float ProgressDistance { get; init; } = 0.75f;
     public float MaxStartDrift { get; init; } = 8;
@@ -52,12 +73,13 @@ public sealed record NavigationOptions
     internal void Validate()
     {
         foreach (var value in new[] { ReadinessTimeout, OperationTimeout, StartupTimeout, PathTimeout,
-                     StallTimeout, MountInterval, TakeoffInterval })
+                     StallTimeout, MountInterval, TakeoffInterval, LandingTimeout, LandingInterval, GroundConfirmation })
             if (value <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(NavigationOptions));
         if (ReadinessSettle < TimeSpan.Zero || RetryDelay < TimeSpan.Zero || MaxRetries < 0 ||
             !float.IsFinite(ProgressDistance) || ProgressDistance <= 0 ||
             !float.IsFinite(MaxStartDrift) || MaxStartDrift <= 0 ||
-            !float.IsFinite(EndpointTolerance) || EndpointTolerance <= 0)
+            !float.IsFinite(EndpointTolerance) || EndpointTolerance <= 0 ||
+            !float.IsFinite(LandingVerticalTolerance) || LandingVerticalTolerance <= 0)
             throw new ArgumentOutOfRangeException(nameof(NavigationOptions));
     }
 }

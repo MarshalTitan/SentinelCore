@@ -33,3 +33,23 @@ Automated tests exercise ownership, late results, cancellation/disposal, zone/bu
 First SRank adoption must be session-only opt-in, default legacy, restricted to ordinary long approach; landing/tag/kill/return stay existing policy. Stop/reload must disable the proving path and dispose its lease before legacy resumes. No PvP adoption until supervised SRank acceptance. Facing and responsive UI work are separate.
 
 A successful build does not establish in-game correctness.
+
+## Opt-in bounded landing (0.4.1)
+
+The existing NavigationRequest constructor and INavigationAdapter remain unchanged. RequireLanding
+defaults off; old destination-radius completion and enum numeric values are preserved. Opt-in requests
+require ILandingNavigationAdapter and physical Grounded evidence on NavigationSnapshot.
+
+At destination radius, Core invalidates outstanding query work, stops the owned follower, and keeps
+the operation active in Landing. It never re-enters mounting/takeoff from Landing. Normal landing
+requests are synchronous, airborne-only and at most once per second. Their acceptance is not success.
+The consumer must verify a locally usable floor and domain safety before requesting a native action.
+
+Success requires InFlight=false, Grounded=true, destination vertical distance <=1.5y and stable
+confirmation for 0.75s. Mount retention on actual ground is permitted. Unknown evidence fails closed.
+A fixed 20-second landing deadline is independent of repeated transition timestamps; dependency loss,
+zone changes, external movement and drift terminate safely. Cancellation/disposal/replacement revoke
+the old operation; no task or delayed cleanup may issue landing actions or stop the successor.
+
+No automatic landing relocation or hunt parking strategy lives in Core. SRank's explicit probe is the
+first consumer; its existing crowd-aware hunt landing remains legacy. Live landing proof is pending.
