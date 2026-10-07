@@ -14,7 +14,10 @@ public sealed record NavigationDiagnostic(
     NavigationResult Result, int Retry);
 public sealed record NavigationDependency(bool MeshReady, bool Building, bool CurrentZone, bool Following);
 public sealed record NavigationPhysicalContext(uint Territory, long ZoneEpoch, bool Loading, bool Mounted,
-    bool InFlight, FlightAvailability Flight);
+    bool InFlight, FlightAvailability Flight)
+{
+    public bool? Grounded { get; init; }
+}
 
 public sealed class NavigationDiagnostics
 {
@@ -41,7 +44,7 @@ public sealed class NavigationDiagnostics
             new(s?.MeshReady == true, s is not null && float.IsFinite(s.BuildProgress) && s.BuildProgress >= 0,
                 s is not null && s.MeshZone == s.Zone, s?.Following == true),
             new(s?.Zone.Territory ?? 0, s?.Zone.Epoch ?? 0, s?.Loading ?? true, s?.Mounted ?? false,
-                s?.InFlight ?? false, s?.Flight ?? FlightAvailability.Unknown), result, retry);
+                s?.InFlight ?? false, s?.Flight ?? FlightAvailability.Unknown) { Grounded = s?.Grounded }, result, retry);
         lock (gate)
         {
             while (entries.Count >= Capacity) entries.Dequeue();

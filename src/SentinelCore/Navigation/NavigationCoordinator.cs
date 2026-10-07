@@ -35,6 +35,8 @@ public sealed class NavigationCoordinator : IDisposable
         if (!NavigationMath.Finite(request.Destination) || !float.IsFinite(request.ArrivalRadius) ||
             request.ArrivalRadius <= 0 || !Enum.IsDefined(request.Mode))
             throw new ArgumentOutOfRangeException(nameof(request));
+        if (request.RequireLanding && adapter is not ILandingNavigationAdapter)
+            throw new NotSupportedException("Ground-confirmed arrival requires a landing-capable adapter.");
         if (active is not null) Finish(active, NavigationState.Cancelled, NavigationReason.Superseded);
         if (poisoned) throw new InvalidOperationException("Backend stop is unconfirmed; ownership cannot be transferred.");
         var snapshot = adapter.Read();
@@ -78,6 +80,14 @@ public sealed class NavigationCoordinator : IDisposable
         if (!NavigationMath.Finite(s.Position)) { Finish(op, NavigationState.Failed, NavigationReason.AdapterFault); return; }
         if (Elapsed(op.Started) >= options.OperationTimeout)
         { Finish(op, NavigationState.Failed, NavigationReason.BudgetExhausted); return; }
+        // Landing owns the operation until a physical confirmation or a terminal result. It must
+        // never fall back through startup and remount/takeoff after contact or dependency loss.
+        if (op.State == NavigationState.Landing)
+        {
+            if (!Ready(s)) { Finish(op, NavigationState.Failed, NavigationReason.DependencyLost); return; }
+            TickLanding(op, s);
+            return;
+        }
         if (!Ready(s))
         {
             op.ReadySince = null;
@@ -101,7 +111,17 @@ public sealed class NavigationCoordinator : IDisposable
             op.RetryAt = clock.GetTimestamp();
         }
         if (NavigationMath.Distance(s.Position, op.Request.Destination, op.Request.HorizontalArrival) <= op.Request.ArrivalRadius)
-        { Finish(op, NavigationState.Arrived, NavigationReason.DestinationReached); return; }
+        {
+            if (!op.Request.RequireLanding)
+            { Finish(op, NavigationState.Arrived, NavigationReason.DestinationReached); return; }
+            InvalidatePath(op);
+            StopOwned(op);
+            op.LandingStarted = clock.GetTimestamp();
+            op.GroundedSince = null;
+            op.LastAction = null;
+            Change(op, NavigationState.Landing, NavigationReason.LandingStarted);
+            return;
+        }
         if (op.State == NavigationState.Recovering && Elapsed(op.RetryAt) < options.RetryDelay) return;
 
         // Availability unknown never means permission to choose a ground route.
@@ -185,6 +205,35 @@ public sealed class NavigationCoordinator : IDisposable
             op.ProgressAt = clock.GetTimestamp();
         }
         if (Elapsed(op.ProgressAt) >= options.StallTimeout) Retry(op, NavigationReason.Stalled);
+    }
+
+    private void TickLanding(NavigationOperation op, NavigationSnapshot s)
+    {
+        if (Elapsed(op.LandingStarted) >= options.LandingTimeout)
+        { Finish(op, NavigationState.Failed, NavigationReason.LandingTimeout); return; }
+        var horizontal = NavigationMath.Distance(s.Position, op.Request.Destination, true);
+        var vertical = Math.Abs(s.Position.Y - op.Request.Destination.Y);
+        if (horizontal > op.Request.ArrivalRadius || vertical > op.Request.ArrivalRadius)
+        { Finish(op, NavigationState.Failed, NavigationReason.LandingDrift); return; }
+
+        if (!s.InFlight && s.Grounded == true && vertical <= options.LandingVerticalTolerance)
+        {
+            op.GroundedSince ??= clock.GetTimestamp();
+            if (Elapsed(op.GroundedSince.Value) >= options.GroundConfirmation)
+                Finish(op, NavigationState.Arrived, NavigationReason.GroundConfirmed);
+            return;
+        }
+        op.GroundedSince = null;
+        // Unknown/airborne ground evidence is never success. Do not dismount on the ground or
+        // turn action acceptance into confirmation; read fresh physical context on the next tick.
+        if (!s.InFlight) return;
+        if (op.LastAction is null || Elapsed(op.LastAction.Value) >= options.LandingInterval)
+        {
+            op.LastAction = clock.GetTimestamp();
+            var accepted = ((ILandingNavigationAdapter)adapter).RequestLanding(s, op.Request.Destination);
+            Change(op, NavigationState.Landing,
+                accepted ? NavigationReason.LandingRequested : NavigationReason.LandingRejected);
+        }
     }
 
     private void Startup(NavigationOperation op, NavigationState state, NavigationReason reason, TimeSpan interval, Action action)
@@ -290,8 +339,8 @@ public sealed class NavigationOperation : IDisposable
     internal NavigationRequest Request { get; }
     internal ZoneStamp Zone { get; }
     internal long Started { get; }
-    internal long StateSince, RetryAt, ProgressAt;
-    internal long? ReadySince, LastAction;
+    internal long StateSince, RetryAt, ProgressAt, LandingStarted;
+    internal long? ReadySince, LastAction, GroundedSince;
     internal bool Fly, OwnsFollower;
     internal Vector3 PathOrigin;
     internal Vector3? Waypoint;
