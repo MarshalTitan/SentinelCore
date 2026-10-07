@@ -2,14 +2,21 @@ name: Publish Libraries
 
 on:
   push:
+    branches: [main]
+    paths: [Directory.Build.props]
     tags:
       - 'v*.*.*.*'
 
 permissions:
   contents: write
 
+concurrency:
+  group: publish-core-libraries
+  cancel-in-progress: false
+
 jobs:
   publish:
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     steps:
       - name: Check out source
@@ -20,14 +27,16 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Validate release tag
+      - name: Validate release version
+        id: version
         shell: pwsh
         run: |
           [xml]$props = Get-Content -LiteralPath 'Directory.Build.props' -Raw
           $version = [string]$props.Project.PropertyGroup.SentinelCoreVersion
-          if ('${{ github.ref_name }}' -ne "v$version") {
+          if ('${{ github.ref }}'.StartsWith('refs/tags/') -and '${{ github.ref_name }}' -ne "v$version") {
             throw "Tag '${{ github.ref_name }}' does not match Sentinel Core version 'v$version'."
           }
+          "tag=v$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Download Dalamud development files
         shell: pwsh
@@ -54,20 +63,62 @@ jobs:
           dotnet pack src/SentinelCore.Dalamud/SentinelCore.Dalamud.csproj -c Release -p:Platform=x64 --no-build -o artifacts/packages
           dotnet pack src/SentinelCore.UI/SentinelCore.UI.csproj -c Release -p:Platform=x64 --no-build -o artifacts/packages
 
-      - name: Publish GitHub release assets
+      - name: Record immutable package hashes
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem artifacts/packages/*.nupkg | ForEach-Object {
+            [ordered]@{
+              file = $_.Name
+              sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+              sha512 = [Convert]::ToBase64String([Security.Cryptography.SHA512]::HashData([IO.File]::ReadAllBytes($_.FullName)))
+            }
+          })
+          if ($packages.Count -ne 3) { throw 'Expected three libraries.' }
+          $manifest = [ordered]@{ commit = '${{ github.sha }}'; tag = '${{ steps.version.outputs.tag }}'; packages = $packages }
+          $manifest | ConvertTo-Json -Depth 5 | Set-Content artifacts/packages/package-hashes.json
+          Get-Content artifacts/packages/package-hashes.json
+
+      - name: Publish immutable GitHub release assets
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = '${{ github.ref_name }}'
-          gh release view $tag --repo '${{ github.repository }}' *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $tag artifacts/packages/*.nupkg --clobber --repo '${{ github.repository }}'
+          $tag = '${{ steps.version.outputs.tag }}'
+          $existing = gh release view $tag --repo '${{ github.repository }}' --json targetCommitish,isDraft,assets 2>$null
+          $exists = $LASTEXITCODE -eq 0
+          $global:LASTEXITCODE = 0
+          if ($exists) {
+            $release = $existing | ConvertFrom-Json
+            if ($release.targetCommitish -ne '${{ github.sha }}' -or $release.isDraft) {
+              throw 'Existing release differs from this source. Increment the version; never replace assets.'
+            }
+            foreach ($file in Get-ChildItem artifacts/packages -File) {
+              if (@($release.assets | Where-Object name -eq $file.Name).Count -ne 1) {
+                throw "Existing release is incomplete: $($file.Name). Do not overwrite it."
+              }
+            }
+            Write-Host 'Exact-source release already exists; assets left immutable.'
           }
           else {
-            gh release create $tag artifacts/packages/*.nupkg `
-              --repo '${{ github.repository }}' `
-              --target '${{ github.sha }}' `
-              --title "Sentinel Core $tag" `
-              --notes "Versioned development libraries for opt-in Sentinel plugin consumers. This is not an installable Dalamud plugin and has no custom-repository entry."
+            gh release create $tag artifacts/packages/* --repo '${{ github.repository }}' --target '${{ github.sha }}' --title "Sentinel Core $tag" --notes 'Additive navigation and sanitized diagnostics foundations. Opt-in consumers only; supervised SRank proving is required before broader adoption. Existing UI APIs are unchanged. Development libraries, not an installable plugin.'
+            if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
           }
+
+      - name: Verify published package hashes
+        shell: pwsh
+        run: |
+          $tag = '${{ steps.version.outputs.tag }}'
+          $root = Join-Path $env:RUNNER_TEMP 'published-core'
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          $base = "https://github.com/${{ github.repository }}/releases/download/$tag"
+          Invoke-WebRequest "$base/package-hashes.json" -OutFile "$root/package-hashes.json"
+          $manifest = Get-Content "$root/package-hashes.json" -Raw | ConvertFrom-Json
+          if ($manifest.commit -ne '${{ github.sha }}') { throw 'Public source mismatch.' }
+          foreach ($package in $manifest.packages) {
+            $path = Join-Path $root $package.file
+            Invoke-WebRequest "$base/$($package.file)" -OutFile $path
+            if ((Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $package.sha256) {
+              throw "Public hash mismatch: $($package.file)"
+            }
+          }
+          Write-Host 'All three public library hashes verified.'
