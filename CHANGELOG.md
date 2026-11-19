@@ -1,3 +1,7 @@
+# 0.4.1.1
+
+Replace legacy personal copyright attribution with MarshalTitan in package and assembly metadata. Preserve all runtime source, public APIs, and assembly binding versions from 0.4.1.0.
+
 # Changelog
 
 ## 0.3.1.0

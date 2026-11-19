@@ -1,9 +1,9 @@
 <Project>
   <PropertyGroup>
-    <SentinelCoreVersion>0.4.1.0</SentinelCoreVersion>
-    <VersionPrefix>0.4.1</VersionPrefix>
-    <PackageVersion>0.4.1</PackageVersion>
-    <AssemblyVersion>$(SentinelCoreVersion)</AssemblyVersion>
+    <SentinelCoreVersion>0.4.1.1</SentinelCoreVersion>
+    <VersionPrefix>0.4.1.1</VersionPrefix>
+    <PackageVersion>0.4.1.1</PackageVersion>
+    <AssemblyVersion>0.4.1.0</AssemblyVersion>
     <FileVersion>$(SentinelCoreVersion)</FileVersion>
     <InformationalVersion>$(SentinelCoreVersion)</InformationalVersion>
     <Authors>MTitan</Authors>
