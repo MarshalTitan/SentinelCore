@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
-    <SentinelCoreVersion>0.3.1.0</SentinelCoreVersion>
-    <VersionPrefix>0.3.1</VersionPrefix>
-    <PackageVersion>0.3.1</PackageVersion>
-    <AssemblyVersion>$(SentinelCoreVersion)</AssemblyVersion>
+    <SentinelCoreVersion>0.3.1.1</SentinelCoreVersion>
+    <VersionPrefix>0.3.1.1</VersionPrefix>
+    <PackageVersion>0.3.1.1</PackageVersion>
+    <AssemblyVersion>0.3.1.0</AssemblyVersion>
     <FileVersion>$(SentinelCoreVersion)</FileVersion>
     <InformationalVersion>$(SentinelCoreVersion)</InformationalVersion>
     <Authors>MTitan</Authors>
     <Company>MarshalTitan</Company>
-    <Copyright>Copyright (c) 2026 Wrothy</Copyright>
+    <Copyright>Copyright (c) 2026 MarshalTitan</Copyright>
     <RepositoryUrl>https://github.com/MarshalTitan/SentinelCore</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
