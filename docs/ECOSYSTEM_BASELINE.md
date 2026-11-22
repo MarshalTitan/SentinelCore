@@ -1,5 +1,7 @@
 # Sentinel ecosystem baseline
 
+> SUPPORT STATUS - 21 November 2026: former PvPSentinel/SentinelHunts comparisons are historical engineering evidence. PvPSentinel, SentinelHunts, SentinelRemote and MinionFrontline are retired; they are not current consumers or future migration targets. Supported Core APIs and packages are unchanged.
+
 Captured before Sentinel Core implementation on 2026-09-22 UTC.
 
 | Repository | Default-branch commit | Git tree | Published release | Release asset SHA-256 |

@@ -1,5 +1,7 @@
 # Adopting Sentinel Core
 
+> SUPPORT STATUS - 21 November 2026: former PvPSentinel/SentinelHunts comparisons are historical engineering evidence. PvPSentinel, SentinelHunts, SentinelRemote and MinionFrontline are retired; they are not current consumers or future migration targets. Supported Core APIs and packages are unchanged.
+
 Adoption is optional and per plugin. A Core upgrade in one plugin cannot change another plugin because each consumer pins and packages its own chosen Core build. There is no installed Sentinel Core plugin and no process-wide service to coordinate.
 
 ## Recommended first Modern 2 adoption: SentinelHUD

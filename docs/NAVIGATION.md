@@ -1,5 +1,7 @@
 # Shared navigation foundation
 
+> SUPPORT STATUS - 21 November 2026: former PvPSentinel/SentinelHunts comparisons are historical engineering evidence. PvPSentinel, SentinelHunts, SentinelRemote and MinionFrontline are retired; they are not current consumers or future migration targets. Supported Core APIs and packages are unchanged.
+
 Status: isolated, opt-in foundation; no consumer migration implied. Existing APIs remain unchanged.
 
 ## Evidence and boundary
