@@ -1,6 +1,6 @@
-# Navigation presentation - 0.4.1.2
+# Navigation presentation - 0.4.1.3
 
-The existing Modern 2 application shell owns a borderless primary icon rail and header controls. Icons retain their original hit areas, native keyboard/gamepad activation and consumer-owned callbacks. A soft circular blue/teal hover highlight is animated through existing motion state; selection remains visible after hover leaves. Reduced motion remains immediate. Focus has an explicit outline.
+The existing Modern 2 application shell owns a borderless primary icon rail and header controls. Icons retain their original hit areas, native keyboard/gamepad activation and consumer-owned callbacks. A soft circular blue/teal hover highlight is animated through existing motion state; selection remains visible after hover leaves. Reduced motion remains immediate. Keyboard/controller focus has an explicit outline; mouse activation does not retain a focus bubble after the pointer leaves.
 
 `SentinelModernNavigationPresentation.Tooltip` measures text with the current font, adds 12-by-8 logical padding, uses a translucent charcoal popup with rounded corners, and places labels beside the rail within viewport bounds. Tooltips are separate ImGui windows, so the rail's child clipping cannot trim the label. The window header uses drawn chevrons and a larger X; `IsCollapsed` selects the chevron without controlling collapse behavior. The selected navigation label supplies header context when the consumer does not override it.
 

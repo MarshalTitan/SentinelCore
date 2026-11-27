@@ -24,10 +24,10 @@ public static class SentinelModernDisclosure
         if (changed) expanded = !expanded;
         var draw = ImGui.GetWindowDrawList();
         var colour = accent ? SentinelModernPalette.Accent : SentinelModernPalette.Text;
-        if (ImGui.IsItemHovered() || ImGui.IsItemFocused())
+        if (ImGui.IsItemHovered() || SentinelModernNavigationPresentation.HasVisibleNavigationFocus())
             draw.AddRectFilled(minimum, minimum + size,
                 ImGui.ColorConvertFloat4ToU32(SentinelModernPaint.WithAlpha(SentinelModernPalette.Accent, 0.12f)), 8f * scale);
-        if (ImGui.IsItemFocused())
+        if (SentinelModernNavigationPresentation.HasVisibleNavigationFocus())
             draw.AddRect(minimum, minimum + size, ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Accent),
                 8f * scale, ImDrawFlags.None, scale);
         var center = minimum + new Vector2(10f * scale, size.Y * 0.5f);

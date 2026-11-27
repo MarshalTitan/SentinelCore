@@ -106,7 +106,7 @@ public static class SentinelModernIconRail
             }
 
             var hovered = ImGui.IsItemHovered();
-            var focused = ImGui.IsItemFocused();
+            var focused = SentinelModernNavigationPresentation.HasVisibleNavigationFocus();
             var hover = motion.Hover(
                 HashCode.Combine(StringComparer.Ordinal.GetHashCode(item.Id), 0x534D3250),
                 (hovered || focused) && item.Enabled);
@@ -294,7 +294,7 @@ public static class SentinelModernSecondaryNavigation
 
         var hover = motion.Hover(
             HashCode.Combine(StringComparer.Ordinal.GetHashCode(id), 0x534D3253),
-            ImGui.IsItemHovered() || ImGui.IsItemFocused());
+            ImGui.IsItemHovered() || SentinelModernNavigationPresentation.HasVisibleNavigationFocus());
         var drawList = ImGui.GetWindowDrawList();
         if (selected || hover > 0.001f)
         {
@@ -313,7 +313,7 @@ public static class SentinelModernSecondaryNavigation
                 2f * scale);
         }
 
-        if (ImGui.IsItemFocused())
+        if (SentinelModernNavigationPresentation.HasVisibleNavigationFocus())
             drawList.AddRect(minimum, maximum, ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Accent),
                 height * 0.5f, ImDrawFlags.None, scale);
         var labelSize = ImGui.CalcTextSize(label, false, labelWidth);
