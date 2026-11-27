@@ -46,6 +46,9 @@ public readonly record struct SentinelModernAppShellOptions(
 
     public string CollapseTooltip { get; init; } = "Minimize";
 
+    /// <summary>Consumer-owned collapse state; affects only the header chevron.</summary>
+    public bool IsCollapsed { get; init; }
+
     public string CloseTooltip { get; init; } = "Close";
 
     public float Scale { get; init; } = 1f;
@@ -120,7 +123,9 @@ public static class SentinelModernAppShell
         ImGui.PushID(options.Id);
         try
         {
-            DrawHeader(options, state, origin, new Vector2(available.X, layout.HeaderHeight));
+            var headerOptions = options with { ContextLabel = options.ContextLabel
+                ?? primaryNavigation.First(item => item.Id == options.SelectedPageId).Label };
+            DrawHeader(headerOptions, state, origin, new Vector2(available.X, layout.HeaderHeight));
 
             var bodyTop = origin.Y + layout.HeaderHeight;
             var railMinimum = new Vector2(origin.X, bodyTop);
@@ -283,13 +288,18 @@ public static class SentinelModernAppShell
                     : (actionCount * buttonSize) + ((actionCount - 1) * buttonGap);
                 var actionsX = maximum.X - padding - actionsWidth;
                 var titleX = iconMaximum.X + (11f * scale);
-                var titleSize = ImGui.CalcTextSize(options.Title);
+                var rightLimit = actionCount == 0 ? maximum.X - padding : actionsX - (10f * scale);
+                var textBudget = MathF.Max(0f, rightLimit - titleX);
+                var statusWidth = options.Status is { } measuredStatus
+                    ? SentinelModernStatusPill.Measure(measuredStatus, scale).X + 12f * scale : 0f;
+                var visibleTitle = FitHeaderText(options.Title,
+                    MathF.Max(0f, textBudget - MathF.Min(textBudget * 0.5f, statusWidth + 72f * scale)));
+                var titleSize = ImGui.CalcTextSize(visibleTitle);
                 drawList.AddText(
                     new Vector2(titleX, centreY - (titleSize.Y * 0.5f)),
                     ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Text),
-                    options.Title);
+                    visibleTitle);
                 var cursorX = titleX + titleSize.X + (12f * scale);
-                var rightLimit = actionCount == 0 ? maximum.X - padding : actionsX - (10f * scale);
 
                 if (options.Status is { } status)
                 {
@@ -304,13 +314,14 @@ public static class SentinelModernAppShell
 
                 if (!string.IsNullOrWhiteSpace(options.ContextLabel))
                 {
-                    var contextSize = ImGui.CalcTextSize(options.ContextLabel);
+                    var visibleContext = FitHeaderText(options.ContextLabel, MathF.Max(0f, rightLimit - cursorX));
+                    var contextSize = ImGui.CalcTextSize(visibleContext);
                     if (cursorX + contextSize.X <= rightLimit)
                     {
                         drawList.AddText(
                             new Vector2(cursorX, centreY - (contextSize.Y * 0.5f)),
                             ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Muted),
-                            options.ContextLabel);
+                            visibleContext);
                         cursorX += contextSize.X + (12f * scale);
                     }
                 }
@@ -335,11 +346,11 @@ public static class SentinelModernAppShell
                 {
                     if (DrawHeaderButton(
                             "##Modern2Collapse",
-                            "−",
+                            options.IsCollapsed ? "up" : "down",
                             options.CollapseTooltip,
                             new Vector2(actionX, centreY - (buttonSize * 0.5f)),
                             buttonSize,
-                            scale))
+                            scale, state.Motion))
                         options.RequestCollapse();
                     actionX += buttonSize + buttonGap;
                 }
@@ -347,11 +358,11 @@ public static class SentinelModernAppShell
                 if (options.RequestClose is not null
                     && DrawHeaderButton(
                         "##Modern2Close",
-                        "×",
+                        "close",
                         options.CloseTooltip,
                         new Vector2(actionX, centreY - (buttonSize * 0.5f)),
                         buttonSize,
-                        scale))
+                        scale, state.Motion))
                     options.RequestClose();
             }
             finally
@@ -373,51 +384,51 @@ public static class SentinelModernAppShell
         }
     }
 
+    private static string FitHeaderText(string text, float width)
+    {
+        if (ImGui.CalcTextSize(text).X <= width) return text;
+        const string suffix = "...";
+        if (ImGui.CalcTextSize(suffix).X > width) return string.Empty;
+        var length = text.Length;
+        while (length > 0 && ImGui.CalcTextSize(text[..length] + suffix).X > width) length--;
+        return text[..length] + suffix;
+    }
+
     private static bool DrawHeaderButton(
-        string id,
-        string glyph,
-        string tooltip,
-        Vector2 minimum,
-        float size,
-        float scale)
+        string id, string glyph, string tooltip, Vector2 minimum, float size, float scale,
+        SentinelModernMotion motion)
     {
         ImGui.SetCursorScreenPos(minimum);
         ImGui.PushStyleColor(ImGuiCol.Button, Vector4.Zero);
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, SentinelModernPalette.SurfaceHover);
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive, SentinelModernPalette.SurfaceActive);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 8f * scale);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, Vector4.Zero);
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive, Vector4.Zero);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, size * 0.5f);
         bool clicked;
-        try
+        try { clicked = ImGui.Button(id, new Vector2(size)); }
+        finally { ImGui.PopStyleVar(2); ImGui.PopStyleColor(3); }
+        var hovered = ImGui.IsItemHovered();
+        var focused = ImGui.IsItemFocused();
+        var hover = motion.Hover(id, hovered || focused);
+        var draw = ImGui.GetWindowDrawList();
+        var maximum = minimum + new Vector2(size);
+        if (hover > 0.001f)
+            draw.AddRectFilled(minimum, maximum, ImGui.ColorConvertFloat4ToU32(
+                SentinelModernPaint.WithAlpha(glyph == "close" ? SentinelModernPalette.Error : SentinelModernPalette.Accent,
+                    0.22f * hover)), size * 0.5f);
+        if (focused)
+            draw.AddRect(minimum, maximum, ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Accent),
+                size * 0.5f, ImDrawFlags.None, 1.5f * scale);
+        var center = minimum + new Vector2(size * 0.5f);
+        var colour = ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Text);
+        if (glyph == "close")
         {
-            ImGui.PushID(id);
-            try
-            {
-                clicked = ImGui.Button(glyph, new Vector2(size));
-            }
-            finally
-            {
-                ImGui.PopID();
-            }
+            var half = 5f * scale;
+            draw.AddLine(center - new Vector2(half), center + new Vector2(half), colour, 1.8f * scale);
+            draw.AddLine(center + new Vector2(-half, half), center + new Vector2(half, -half), colour, 1.8f * scale);
         }
-        finally
-        {
-            ImGui.PopStyleVar();
-            ImGui.PopStyleColor(3);
-        }
-
-        if (ImGui.IsItemHovered() && !string.IsNullOrWhiteSpace(tooltip))
-        {
-            ImGui.BeginTooltip();
-            try
-            {
-                ImGui.TextUnformatted(tooltip);
-            }
-            finally
-            {
-                ImGui.EndTooltip();
-            }
-        }
-
+        else SentinelModernNavigationPresentation.Chevron(draw, center, 13f * scale, colour, glyph == "up");
+        if (hovered) SentinelModernNavigationPresentation.Tooltip(tooltip, scale);
         return clicked;
     }
 

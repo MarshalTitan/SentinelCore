@@ -4,8 +4,11 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
     <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/SentinelCore.UI/SentinelCore.UI.csproj" />
+    <Reference Include="Dalamud.Bindings.ImGui" HintPath="$(DALAMUD_HOME)/Dalamud.Bindings.ImGui.dll" Private="true" />
+    <None Include="$(DALAMUD_HOME)/cimgui.dll" Link="cimgui.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

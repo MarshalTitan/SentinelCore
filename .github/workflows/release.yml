@@ -103,7 +103,7 @@ jobs:
             Write-Host 'Exact-source release already exists; assets left immutable.'
           }
           else {
-            gh release create $tag artifacts/packages/* --repo '${{ github.repository }}' --target '${{ github.sha }}' --title "Sentinel Core $tag" --notes 'Project copyright attribution in package and assembly metadata. Runtime source, public APIs and assembly binding versions are unchanged from the corresponding prior release. Development libraries, not an installable plugin.'
+            gh release create $tag artifacts/packages/* --repo '${{ github.repository }}' --target '${{ github.sha }}' --title "Sentinel Core $tag" --notes 'Sentinel navigation polish: borderless icon rail and window controls, rounded translucent tooltips and chevron minimize/restore controls. Existing public APIs, assembly binding versions and generic runtime behavior are preserved. Development libraries, not an installable plugin.'
             if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
           }
 
