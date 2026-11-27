@@ -408,7 +408,7 @@ public static class SentinelModernAppShell
         try { clicked = ImGui.Button(id, new Vector2(size)); }
         finally { ImGui.PopStyleVar(2); ImGui.PopStyleColor(3); }
         var hovered = ImGui.IsItemHovered();
-        var focused = ImGui.IsItemFocused();
+        var focused = SentinelModernNavigationPresentation.HasVisibleNavigationFocus();
         var hover = motion.Hover(id, hovered || focused);
         var draw = ImGui.GetWindowDrawList();
         var maximum = minimum + new Vector2(size);

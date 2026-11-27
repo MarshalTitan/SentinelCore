@@ -66,6 +66,9 @@ internal static class NavigationRenderTests
             if (selected != "Plugins") throw new Exception("Selection depended on hover.");
             var closeCenter = origin + new Vector2(logicalSize.X * scale - 29f * scale, header * 0.5f);
             var minimizeCenter = closeCenter - new Vector2(36f * scale, 0);
+            var controlMin = minimizeCenter - new Vector2(15f * scale);
+            var controlMax = minimizeCenter + new Vector2(15f * scale);
+            var idleGeometry = CountVertices(controlMin, controlMax);
             void Click(Vector2 point)
             {
                 io.AddMousePosEvent(point.X, point.Y); Frame();
@@ -74,6 +77,9 @@ internal static class NavigationRenderTests
             }
             Click(minimizeCenter);
             if (!minimized || closes != 0) throw new Exception("Minimize action changed.");
+            io.AddMousePosEvent(-100, -100); Frame();
+            if (CountVertices(controlMin, controlMax) != idleGeometry)
+                throw new Exception("Mouse activation retained a focus bubble after pointer exit.");
             Click(minimizeCenter);
             if (minimized) throw new Exception("Restore action changed.");
             Click(closeCenter);
@@ -99,5 +105,19 @@ internal static class NavigationRenderTests
             }
         }
         finally { ImGui.DestroyContext(context); }
+    }
+
+    private static unsafe int CountVertices(Vector2 minimum, Vector2 maximum)
+    {
+        var data = ImGui.GetDrawData();
+        var count = 0;
+        for (var listIndex = 0; listIndex < data.CmdListsCount; listIndex++)
+        {
+            var list = new ImDrawListPtr(data.CmdLists[listIndex]);
+            foreach (var vertex in list.VtxBuffer)
+                if (vertex.Pos.X >= minimum.X && vertex.Pos.X <= maximum.X &&
+                    vertex.Pos.Y >= minimum.Y && vertex.Pos.Y <= maximum.Y) count++;
+        }
+        return count;
     }
 }

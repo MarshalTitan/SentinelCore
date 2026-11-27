@@ -6,6 +6,9 @@ namespace SentinelCore.UI;
 /// <summary>Presentation shared by the primary rail and custom window controls.</summary>
 public static class SentinelModernNavigationPresentation
 {
+    internal static bool HasVisibleNavigationFocus()
+        => ImGui.IsItemFocused() && ImGui.GetIO().NavVisible;
+
     public static void Tooltip(string text, float scale = 1f, bool besideItem = false)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
