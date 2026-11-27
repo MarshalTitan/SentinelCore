@@ -8,4 +8,4 @@ The existing Modern 2 application shell owns a borderless primary icon rail and 
 
 This is an additive UI patch. Existing shell constructors, callbacks, identities, theme support and assembly binding version are retained. Generic Core runtime source is unchanged. Consumers pin immutable packages and rebuild; no library is installed as a Dalamud plugin.
 
-Native ImGui regression coverage exercises 48 size/UI-scale/text-scale combinations, rail clicks and persistent selection, minimize/restore/close callbacks, viewport-edge labels and balanced styles. Consumer suites retain keyboard/controller and persistence checks. Actual FFXIV visual acceptance remains distinct from native renderer validation.
+Native ImGui regression coverage exercises 24 size/UI-scale/text-scale combinations, each exercised expanded and collapsed, rail clicks and persistent selection, minimize/restore/close callbacks, viewport-edge labels and balanced styles. Consumer suites retain keyboard/controller and persistence checks. Actual FFXIV visual acceptance remains distinct from native renderer validation.
