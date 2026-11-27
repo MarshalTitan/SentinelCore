@@ -262,8 +262,10 @@ public static class SentinelModernSecondaryNavigation
         if (!float.IsFinite(scale) || scale <= 0f)
             throw new ArgumentOutOfRangeException(nameof(scale));
 
-        var height = 34f * scale;
         var width = ImGui.GetContentRegionAvail().X;
+        var iconWidth = string.IsNullOrWhiteSpace(icon) ? 0f : ImGui.CalcTextSize(icon).X + 9f * scale;
+        var labelWidth = MathF.Max(1f, width - 24f * scale - iconWidth);
+        var height = MathF.Max(34f * scale, ImGui.CalcTextSize(label, false, labelWidth).Y + 12f * scale);
         var minimum = ImGui.GetCursorScreenPos();
         var maximum = minimum + new Vector2(width, height);
         ImGui.PushID(id);
@@ -273,14 +275,15 @@ public static class SentinelModernSecondaryNavigation
             ImGui.PushStyleColor(ImGuiCol.Button, Vector4.Zero);
             ImGui.PushStyleColor(ImGuiCol.ButtonHovered, Vector4.Zero);
             ImGui.PushStyleColor(ImGuiCol.ButtonActive, Vector4.Zero);
-            ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 7f * scale);
+            ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, height * 0.5f);
+            ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f);
             try
             {
                 clicked = ImGui.Button("##SecondaryNavigation", new Vector2(width, height));
             }
             finally
             {
-                ImGui.PopStyleVar();
+                ImGui.PopStyleVar(2);
                 ImGui.PopStyleColor(3);
             }
         }
@@ -291,14 +294,14 @@ public static class SentinelModernSecondaryNavigation
 
         var hover = motion.Hover(
             HashCode.Combine(StringComparer.Ordinal.GetHashCode(id), 0x534D3253),
-            ImGui.IsItemHovered());
+            ImGui.IsItemHovered() || ImGui.IsItemFocused());
         var drawList = ImGui.GetWindowDrawList();
         if (selected || hover > 0.001f)
         {
             var fill = selected
                 ? SentinelModernPalette.NavigationSelected
                 : SentinelModernPaint.WithAlpha(SentinelModernPalette.SurfaceHover, 0.58f * hover);
-            drawList.AddRectFilled(minimum, maximum, ImGui.ColorConvertFloat4ToU32(fill), 7f * scale);
+            drawList.AddRectFilled(minimum, maximum, ImGui.ColorConvertFloat4ToU32(fill), height * 0.5f);
         }
 
         if (selected)
@@ -310,7 +313,10 @@ public static class SentinelModernSecondaryNavigation
                 2f * scale);
         }
 
-        var labelSize = ImGui.CalcTextSize(label);
+        if (ImGui.IsItemFocused())
+            drawList.AddRect(minimum, maximum, ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Accent),
+                height * 0.5f, ImDrawFlags.None, scale);
+        var labelSize = ImGui.CalcTextSize(label, false, labelWidth);
         var colour = selected ? SentinelModernPalette.Text : SentinelModernPalette.Muted;
         var labelX = minimum.X + (12f * scale);
         if (!string.IsNullOrWhiteSpace(icon))
@@ -322,9 +328,9 @@ public static class SentinelModernSecondaryNavigation
         }
 
         drawList.AddText(
+            ImGui.GetFont(), ImGui.GetFontSize(),
             new Vector2(labelX, minimum.Y + ((height - labelSize.Y) * 0.5f)),
-            ImGui.ColorConvertFloat4ToU32(colour),
-            label);
+            ImGui.ColorConvertFloat4ToU32(colour), label, labelWidth);
         return clicked;
     }
 }
