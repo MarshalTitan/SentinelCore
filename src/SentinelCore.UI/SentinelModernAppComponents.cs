@@ -70,13 +70,9 @@ public static class SentinelModernIconRail
         var indicatorMaximum = indicatorMinimum + new Vector2(buttonSize);
         var drawList = ImGui.GetWindowDrawList();
 
-        SentinelModernPaint.GlassCard(
-            drawList,
-            indicatorMinimum,
-            indicatorMaximum,
-            11f * scale,
-            SentinelModernPalette.Accent,
-            0.45f);
+        drawList.AddRectFilled(indicatorMinimum, indicatorMaximum,
+            ImGui.ColorConvertFloat4ToU32(SentinelModernPaint.WithAlpha(SentinelModernPalette.Accent, 0.22f)),
+            buttonSize * 0.5f);
         drawList.AddRectFilled(
             new Vector2(origin.X, indicatorMinimum.Y + (buttonSize * 0.25f)),
             new Vector2(origin.X + (3f * scale), indicatorMinimum.Y + (buttonSize * 0.75f)),
@@ -110,9 +106,10 @@ public static class SentinelModernIconRail
             }
 
             var hovered = ImGui.IsItemHovered();
+            var focused = ImGui.IsItemFocused();
             var hover = motion.Hover(
                 HashCode.Combine(StringComparer.Ordinal.GetHashCode(item.Id), 0x534D3250),
-                hovered && item.Enabled);
+                (hovered || focused) && item.Enabled);
             if (index != selectedIndex && hover > 0.001f)
             {
                 drawList.AddRectFilled(
@@ -121,8 +118,13 @@ public static class SentinelModernIconRail
                     ImGui.ColorConvertFloat4ToU32(SentinelModernPaint.WithAlpha(
                         SentinelModernPalette.SurfaceHover,
                         0.62f * hover)),
-                    11f * scale);
+                    buttonSize * 0.5f);
             }
+
+            if (focused)
+                drawList.AddRect(minimum, maximum,
+                    ImGui.ColorConvertFloat4ToU32(SentinelModernPalette.Accent), buttonSize * 0.5f,
+                    ImDrawFlags.None, 1.5f * scale);
 
             var iconColour = !item.Enabled
                 ? SentinelModernPalette.Subtle
@@ -161,7 +163,7 @@ public static class SentinelModernIconRail
             }
 
             if (hovered)
-                ShowTooltip(item.Label);
+                SentinelModernNavigationPresentation.Tooltip(item.Label, scale, besideItem: true);
             if (clicked && item.Enabled)
                 clickedId = item.Id;
         }
@@ -176,12 +178,13 @@ public static class SentinelModernIconRail
         ImGui.PushStyleColor(ImGuiCol.Button, Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.ButtonHovered, Vector4.Zero);
         ImGui.PushStyleColor(ImGuiCol.ButtonActive, Vector4.Zero);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 11f * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 20f * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f);
     }
 
     private static void PopTransparentButtonStyle()
     {
-        ImGui.PopStyleVar();
+        ImGui.PopStyleVar(2);
         ImGui.PopStyleColor(3);
     }
 

@@ -14,6 +14,7 @@ var tests = new (string Name, Action Run)[]
     ("modern 2 status pills", TestModern2StatusPills),
     ("modern 2 responsive settings rows", TestModern2SettingsRows),
     ("modern 2 polished defaults", TestModern2PolishedDefaults),
+    ("native navigation, tooltip containment and header input", NavigationRenderTests.Run),
 };
 
 var failures = new List<string>();
